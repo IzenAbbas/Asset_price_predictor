@@ -1,27 +1,23 @@
 {
   "selected_model": "linear_log_target",
-  "cv_mae": 397677.3358384236,
-  "cv_rmse": 639134.5618827217,
-  "cv_r2": 0.8939224121164486,
-  "test_mae": 390693.65482145123,
-  "test_rmse": 630396.5538061784,
-  "test_r2": 0.8953601661880665,
-  "age_mileage_correlation": 0.4649289135228864,
-  "multicollinearity_decision": "keep_all_numeric_features",
-  "numeric_features_used": [
-    "mileage",
-    "engine_capacity",
-    "vehicle_age"
-  ],
-  "categorical_features_used": [
-    "fuel_type",
-    "transmission",
-    "assembly",
-    "brand",
-    "model_name"
-  ],
+  "test_mae": 589252.3982404614,
+  "test_rmse": 2539535.7544074575,
+  "test_r2": 0.8138248267390229,
+  "features": {
+    "numeric": [
+      "mileage",
+      "engine_capacity",
+      "vehicle_age"
+    ],
+    "categorical": [
+      "fuel_type",
+      "transmission",
+      "assembly",
+      "brand",
+      "model_name"
+    ]
+  },
   "artifacts": {
-    "model_path": "D:\\ai_project\\artifacts\\car_price_best_model.pkl",
-    "predictions_path": "D:\\ai_project\\artifacts\\test_predictions.csv"
+    "model_path": "D:\\ai_project\\artifacts\\car_price_best_model.pkl"
   }
 }
