@@ -1,12 +1,22 @@
-# Car Price Predictor (Multiple Linear Regression)
+# Asset Advisor + Car/House Predictors
 
-This project trains and evaluates a multiple linear regression model to predict car prices from:
-- `mileage`
-- `engine_capacity`
-- `vehicle_age`
-- `fuel_type`
-- `transmission`
-- `assembly`
+This project now includes a CSV-backed voice advisor that can inspect and compare:
+- used cars from `pakwheels_pakistan_automobile_dataset.csv`
+- house/property listings from `House_Details.csv`
+
+The advisor in `advisor.py` uses a detailed system prompt and direct CSV tools to answer valuation and comparison questions with grounded data.
+
+## Advisor behavior
+
+- Use CSV-backed tools before answering factual questions.
+- Ask for missing asset details instead of guessing.
+- Return comparable listings and price summaries when possible.
+- Stay within the car/property advisory domain.
+
+## Data sources
+
+- `pakwheels_pakistan_automobile_dataset.csv`
+- `House_Details.csv`
 
 Dataset file expected at project root:
 - `pakwheels_pakistan_automobile_dataset.csv`
@@ -17,6 +27,8 @@ Dataset file expected at project root:
 python -m pip install -r requirements.txt
 python main.py
 ```
+
+To run the voice advisor, launch `advisor.py` in the same environment after setting your LiveKit / Gemini credentials.
 
 ## What `main.py` does
 
