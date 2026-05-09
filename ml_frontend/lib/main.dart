@@ -9,7 +9,7 @@ import 'screens/car_prediction_screen.dart';
 import 'screens/house_prediction_screen.dart';
 import 'services/api_service.dart';
 import 'theme/app_theme.dart';
-
+``
 void main() {
   runApp(const AssetAdvisorApp());
 }
