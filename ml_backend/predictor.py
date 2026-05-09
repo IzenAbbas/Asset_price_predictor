@@ -52,6 +52,25 @@ def _safe_unique(df: pd.DataFrame, column: str, limit: int = 200) -> list[str]:
     return sorted(values)
 
 
+def _get_frequent_values(df: pd.DataFrame, column: str, min_count: int = 20, limit: int = 300) -> list[str]:
+    """Return sorted unique values that appear at least min_count times.
+    
+    Useful for model names and other categorical fields where we want to include
+    only reasonably common values to keep the dropdown manageable.
+    """
+    if column not in df.columns:
+        return []
+    
+    # Count occurrences
+    value_counts = df[column].value_counts()
+    # Filter by minimum count
+    frequent = value_counts[value_counts >= min_count].index.tolist()
+    # Apply limit
+    frequent = frequent[:limit]
+    # Normalize to lowercase and sort
+    return sorted([str(v).strip().lower() for v in frequent if pd.notna(v)])
+
+
 class MLPredictor:
     """Singleton-style ML predictor that holds both car and house models."""
 
@@ -85,8 +104,8 @@ class MLPredictor:
                 "fuel_types": _safe_unique(self.car_df, "fuel_type") or ["petrol", "diesel", "hybrid"],
                 "transmissions": _safe_unique(self.car_df, "transmission") or ["automatic", "manual"],
                 "assemblies": _safe_unique(self.car_df, "assembly") or ["local", "imported"],
-                "brands": _safe_unique(self.car_df, "brand") or ["toyota", "honda", "suzuki"],
-                "model_names": _safe_unique(self.car_df, "model_name") or ["corolla altis", "civic", "alto"],
+                "brands": _safe_unique(self.car_df, "brand", limit=100) or ["toyota", "honda", "suzuki"],
+                "model_names": _get_frequent_values(self.car_df, "model_name", min_count=20, limit=300) or ["corolla altis", "civic", "alto"],
                 "cities": _safe_unique(self.car_df, "city"),
             },
             "house": {

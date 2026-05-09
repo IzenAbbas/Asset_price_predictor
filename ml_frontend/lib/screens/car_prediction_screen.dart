@@ -1,6 +1,7 @@
 /// Car Price Prediction screen — collects car features and shows the
 /// predicted price from the FastAPI backend.
 library;
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/prediction_model.dart';
@@ -74,9 +75,9 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
   Future<void> _extractVehicleFields() async {
     final url = _urlCtrl.text.trim();
     if (url.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a URL')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please enter a URL')));
       return;
     }
 
@@ -102,19 +103,26 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
         if (extracted.engineCapacityCc != null) {
           _engineCapCtrl.text = extracted.engineCapacityCc!.toStringAsFixed(0);
         }
-        if (extracted.fuelType != null && widget.options.car['fuel_types']!.contains(extracted.fuelType)) {
+        if (extracted.fuelType != null &&
+            widget.options.car['fuel_types']!.contains(extracted.fuelType)) {
           _fuelType = extracted.fuelType;
         }
-        if (extracted.transmission != null && widget.options.car['transmissions']!.contains(extracted.transmission)) {
+        if (extracted.transmission != null &&
+            widget.options.car['transmissions']!.contains(
+              extracted.transmission,
+            )) {
           _transmission = extracted.transmission;
         }
-        if (extracted.assembly != null && widget.options.car['assemblies']!.contains(extracted.assembly)) {
+        if (extracted.assembly != null &&
+            widget.options.car['assemblies']!.contains(extracted.assembly)) {
           _assembly = extracted.assembly;
         }
-        if (extracted.brand != null && widget.options.car['brands']!.contains(extracted.brand)) {
+        if (extracted.brand != null &&
+            widget.options.car['brands']!.contains(extracted.brand)) {
           _brand = extracted.brand;
         }
-        if (extracted.modelName != null && widget.options.car['model_names']!.contains(extracted.modelName)) {
+        if (extracted.modelName != null &&
+            widget.options.car['model_names']!.contains(extracted.modelName)) {
           _modelName = extracted.modelName;
         }
       });
@@ -189,29 +197,143 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
                     gradient: AppGradients.primary,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(Icons.directions_car_rounded,
-                      color: Colors.white, size: 28),
+                  child: const Icon(
+                    Icons.directions_car_rounded,
+                    color: Colors.white,
+                    size: 28,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Car Price Predictor',
-                        style: GoogleFonts.inter(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        )),
-                    Text('Estimate used car value in Pakistan',
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                        )),
+                    Text(
+                      'Car Price Predictor',
+                      style: GoogleFonts.inter(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      'Estimate used car value in Pakistan',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                   ],
                 ),
               ],
             ),
             const SizedBox(height: 24),
+
+            // ── URL Extraction Card ──
+            GlassCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.link_rounded,
+                        color: AppColors.accent,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Auto-fill from Listing',
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.accent,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _urlCtrl,
+                    style: const TextStyle(color: AppColors.textPrimary),
+                    decoration: InputDecoration(
+                      labelText: 'Listing URL',
+                      hintText:
+                          'e.g. https://www.pakwheels.com/... or https://www.olx.com.pk/...',
+                      hintStyle: const TextStyle(fontSize: 12),
+                    ),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return null;
+                      if (!v.contains('http')) return 'Enter a valid URL';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _isExtracting ? null : _extractVehicleFields,
+                      icon: _isExtracting
+                          ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppColors.primary,
+                                ),
+                              ),
+                            )
+                          : const Icon(Icons.auto_fix_high),
+                      label: Text(
+                        _isExtracting ? 'Extracting...' : 'Extract Details',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        backgroundColor: AppColors.primary.withValues(
+                          alpha: 0.1,
+                        ),
+                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: AppColors.primary),
+                      ),
+                    ),
+                  ),
+                  if (_extractionError != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: AppColors.error.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            color: AppColors.error,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _extractionError!,
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: AppColors.error,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
 
             // ── Numeric Fields ──
             GlassCard(
@@ -220,12 +342,20 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
                 children: [
                   _sectionTitle('Vehicle Details'),
                   const SizedBox(height: 16),
-                  _numField(_modelYearCtrl, 'Model Year', 'e.g. 2020',
-                      isInt: true),
+                  _numField(
+                    _modelYearCtrl,
+                    'Model Year',
+                    'e.g. 2020',
+                    isInt: true,
+                  ),
                   const SizedBox(height: 14),
                   _numField(_mileageCtrl, 'Mileage (km)', 'e.g. 50000'),
                   const SizedBox(height: 14),
-                  _numField(_engineCapCtrl, 'Engine Capacity (cc)', 'e.g. 1300'),
+                  _numField(
+                    _engineCapCtrl,
+                    'Engine Capacity (cc)',
+                    'e.g. 1300',
+                  ),
                 ],
               ),
             ),
@@ -238,20 +368,40 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
                 children: [
                   _sectionTitle('Specifications'),
                   const SizedBox(height: 16),
-                  _dropdown('Fuel Type', car['fuel_types'] ?? [], _fuelType,
-                      (v) => setState(() => _fuelType = v)),
+                  _dropdown(
+                    'Fuel Type',
+                    car['fuel_types'] ?? [],
+                    _fuelType,
+                    (v) => setState(() => _fuelType = v),
+                  ),
                   const SizedBox(height: 14),
-                  _dropdown('Transmission', car['transmissions'] ?? [],
-                      _transmission, (v) => setState(() => _transmission = v)),
+                  _dropdown(
+                    'Transmission',
+                    car['transmissions'] ?? [],
+                    _transmission,
+                    (v) => setState(() => _transmission = v),
+                  ),
                   const SizedBox(height: 14),
-                  _dropdown('Assembly', car['assemblies'] ?? [], _assembly,
-                      (v) => setState(() => _assembly = v)),
+                  _dropdown(
+                    'Assembly',
+                    car['assemblies'] ?? [],
+                    _assembly,
+                    (v) => setState(() => _assembly = v),
+                  ),
                   const SizedBox(height: 14),
-                  _dropdown('Brand', car['brands'] ?? [], _brand,
-                      (v) => setState(() => _brand = v)),
+                  _dropdown(
+                    'Brand',
+                    car['brands'] ?? [],
+                    _brand,
+                    (v) => setState(() => _brand = v),
+                  ),
                   const SizedBox(height: 14),
-                  _dropdown('Model Name', car['model_names'] ?? [], _modelName,
-                      (v) => setState(() => _modelName = v)),
+                  _dropdown(
+                    'Model Name',
+                    car['model_names'] ?? [],
+                    _modelName,
+                    (v) => setState(() => _modelName = v),
+                  ),
                 ],
               ),
             ),
@@ -275,15 +425,22 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
   // ─── Helpers ───────────────────────────────────────────────────────
 
   Widget _sectionTitle(String title) {
-    return Text(title,
-        style: GoogleFonts.inter(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: AppColors.accent));
+    return Text(
+      title,
+      style: GoogleFonts.inter(
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
+        color: AppColors.accent,
+      ),
+    );
   }
 
-  Widget _numField(TextEditingController ctrl, String label, String hint,
-      {bool isInt = false}) {
+  Widget _numField(
+    TextEditingController ctrl,
+    String label,
+    String hint, {
+    bool isInt = false,
+  }) {
     return TextFormField(
       controller: ctrl,
       keyboardType: isInt
@@ -300,8 +457,12 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
     );
   }
 
-  Widget _dropdown(String label, List<String> items, String? value,
-      ValueChanged<String?> onChanged) {
+  Widget _dropdown(
+    String label,
+    List<String> items,
+    String? value,
+    ValueChanged<String?> onChanged,
+  ) {
     return DropdownButtonFormField<String>(
       initialValue: items.contains(value) ? value : null,
       isExpanded: true,
@@ -335,23 +496,31 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
           padding: const EdgeInsets.symmetric(vertical: 18),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
         ),
         child: _isLoading
             ? const SizedBox(
                 height: 22,
                 width: 22,
-                child:
-                    CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2.5,
+                ),
+              )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(Icons.auto_awesome, size: 20),
                   const SizedBox(width: 10),
-                  Text('Predict Car Price',
-                      style: GoogleFonts.inter(
-                          fontSize: 16, fontWeight: FontWeight.w600)),
+                  Text(
+                    'Predict Car Price',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ],
               ),
       ),
@@ -376,20 +545,29 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            const Icon(Icons.check_circle_rounded,
-                color: Colors.white, size: 48),
+            const Icon(
+              Icons.check_circle_rounded,
+              color: Colors.white,
+              size: 48,
+            ),
             const SizedBox(height: 12),
-            Text('Predicted Price',
-                style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white70)),
+            Text(
+              'Predicted Price',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.white70,
+              ),
+            ),
             const SizedBox(height: 6),
-            Text(_result!.formattedPrice,
-                style: GoogleFonts.inter(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white)),
+            Text(
+              _result!.formattedPrice,
+              style: GoogleFonts.inter(
+                fontSize: 32,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
           ],
         ),
       ),
@@ -409,9 +587,10 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
           const Icon(Icons.error_outline, color: AppColors.error, size: 24),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(_error!,
-                style: GoogleFonts.inter(
-                    fontSize: 13, color: AppColors.error)),
+            child: Text(
+              _error!,
+              style: GoogleFonts.inter(fontSize: 13, color: AppColors.error),
+            ),
           ),
         ],
       ),

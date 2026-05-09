@@ -28,15 +28,15 @@ class CarPredictionInput {
   });
 
   Map<String, dynamic> toJson() => {
-        'model_year': modelYear,
-        'mileage': mileage,
-        'engine_capacity': engineCapacity,
-        'fuel_type': fuelType,
-        'transmission': transmission,
-        'assembly': assembly,
-        'brand': brand,
-        'model_name': modelName,
-      };
+    'model_year': modelYear,
+    'mileage': mileage,
+    'engine_capacity': engineCapacity,
+    'fuel_type': fuelType,
+    'transmission': transmission,
+    'assembly': assembly,
+    'brand': brand,
+    'model_name': modelName,
+  };
 }
 
 class CarPredictionOutput {
@@ -125,19 +125,19 @@ class HousePredictionInput {
   });
 
   Map<String, dynamic> toJson() => {
-        'Total_Area': totalArea,
-        'bedrooms': bedrooms,
-        'baths': baths,
-        'latitude': latitude,
-        'longitude': longitude,
-        'listing_year': listingYear,
-        'listing_month': listingMonth,
-        'property_type': propertyType,
-        'location': location,
-        'city': city,
-        'province_name': provinceName,
-        'purpose': purpose,
-      };
+    'Total_Area': totalArea,
+    'bedrooms': bedrooms,
+    'baths': baths,
+    'latitude': latitude,
+    'longitude': longitude,
+    'listing_year': listingYear,
+    'listing_month': listingMonth,
+    'property_type': propertyType,
+    'location': location,
+    'city': city,
+    'province_name': provinceName,
+    'purpose': purpose,
+  };
 }
 
 class HousePredictionOutput {

@@ -2,6 +2,7 @@
 ///
 /// All network calls are centralised here so the UI code stays clean.
 library;
+
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -16,7 +17,7 @@ class ApiService {
     if (kReleaseMode && _productionUrl != 'YOUR_RENDER_URL') {
       return _productionUrl;
     }
-    
+
     if (kIsWeb) {
       return 'http://127.0.0.1:8000';
     }
@@ -68,7 +69,8 @@ class ApiService {
   // ─── House Price Prediction ────────────────────────────────────────
 
   Future<HousePredictionOutput> predictHousePrice(
-      HousePredictionInput input) async {
+    HousePredictionInput input,
+  ) async {
     final url = Uri.parse('$baseUrl/predict/house');
     try {
       final response = await http

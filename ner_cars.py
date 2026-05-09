@@ -183,29 +183,142 @@ def clean_listing_text(raw_text: str, title: str = "") -> str:
 	return "\n".join(candidates)
 
 
-def clean_pakwheels(text: str) -> str:
-	# First: try to extract the actual ad block from the raw text before doing global removals.
-	raw_lines = [ln for ln in text.splitlines()]
-	for i, line in enumerate(raw_lines):
-		if re.search(r"\b(19\d{2}|20\d{2})\b", line):
-			start = max(0, i - 6)
-			end = min(len(raw_lines), i + 12)
-			window = "\n".join(raw_lines[start:end])
-			# If core specs like km or cc are present, try to include them. Otherwise, look for spec lines elsewhere and expand.
-			if re.search(r"\b\d[\d,]*\s?(?:km|kms|kilometres?|kilometers?)\b", window, flags=re.IGNORECASE) or re.search(r"\b\d{3,4}\s?cc\b", window, flags=re.IGNORECASE):
-				# ensure we also include nearby spec blocks such as Fuel/Transmission/Assembly if they appear elsewhere
-				spec_match = re.search(r"\b(petrol|diesel|hybrid|electric|automatic|manual|assembly|engine capacity)\b", window, flags=re.IGNORECASE)
-				if spec_match:
-					return window.strip()
-				# otherwise search the whole document for spec-like lines and expand window to include them
-				for j, l in enumerate(raw_lines):
-					if re.search(r"\b(petrol|diesel|hybrid|electric|automatic|manual|assembly|engine capacity)\b", l, flags=re.IGNORECASE):
-						# expand to include this spec block
-						start = min(start, max(0, j - 3))
-						end = max(end, min(len(raw_lines), j + 4))
-						return "\n".join(raw_lines[start:end]).strip()
+def _extract_structured_specs(raw_lines: list[str]) -> list[str]:
+	"""Scan raw lines for structured label→value pairs used on PakWheels / OLX.
 
-	# If ad block not found, fall back to removing top navigation, service promos and long SEO/link lists
+	PakWheels uses a pattern like:
+	    Assembly        (label line)
+	    Local           (value line)
+	    Engine Capacity (label line)
+	    1500 cc         (value line)
+
+	This function detects those pairs and also collects standalone spec lines
+	(e.g. "Petrol", "Automatic", "160,000 km").
+	"""
+	SPEC_LABELS = {
+		"registered in", "color", "assembly", "engine capacity", "body type",
+		"last updated", "fuel type", "fuel", "transmission", "mileage",
+		"model year", "year", "make", "model", "variant", "engine type",
+		"condition", "body color", "ad ref", "type", "registered city",
+	}
+	STANDALONE_SPEC_RE = re.compile(
+		r"^(?:"
+		r"\d[\d,]*\s?(?:km|kms|cc)\b"                         # 160,000 km  or  1500 cc
+		r"|\.?\s*\d{3,4}\s?cc\s*\.?"                           # . 1500 cc .
+		r"|\b(?:petrol|diesel|hybrid|electric|cng|lpg)\b"      # fuel types
+		r"|\b(?:automatic|manual)\b"                           # transmission
+		r"|\b(?:local|imported)\b"                             # assembly
+		r"|\b(?:sedan|hatchback|suv|crossover|van|truck)\b"    # body type
+		r"|\b(?:19|20)\d{2}\b"                                 # standalone year
+		r")$",
+		re.IGNORECASE,
+	)
+
+	specs: list[str] = []
+	seen: set[str] = set()
+	i = 0
+	while i < len(raw_lines):
+		line = raw_lines[i].strip()
+		lower = line.lower()
+
+		# Check if this line is a known spec label
+		if lower in SPEC_LABELS:
+			specs.append(line)
+			seen.add(lower)
+			# Grab the next non-empty line as the value
+			if i + 1 < len(raw_lines):
+				val = raw_lines[i + 1].strip()
+				if val and val.lower() not in SPEC_LABELS:
+					specs.append(val)
+					seen.add(val.lower())
+					i += 2
+					continue
+			i += 1
+			continue
+
+		# Check if this is a standalone spec value (e.g. "Petrol", "160,000 km")
+		if STANDALONE_SPEC_RE.match(line) and lower not in seen:
+			specs.append(line)
+			seen.add(lower)
+
+		i += 1
+
+	return specs
+
+
+def clean_pakwheels(text: str) -> str:
+	raw_lines = [ln.strip() for ln in text.splitlines()]
+
+	# --- Step 1: Extract the ad title ---
+	# PakWheels titles appear as repeated heading lines like "Honda Civic EXi Prosmatec 2004"
+	# They also appear in breadcrumbs. Look for a line with brand + year pattern.
+	title_line = ""
+	TITLE_RE = re.compile(
+		r"^(?:Used\s+)?(?:(?:Toyota|Honda|Suzuki|Kia|Hyundai|Changan|MG|BMW|Audi|"
+		r"Daihatsu|Nissan|Mercedes|Mitsubishi|Lexus|Mazda|Subaru|Isuzu|FAW|BAIC|"
+		r"Prince|United|Chery|Proton|Peugeot|Volkswagen|Land Rover|Jeep)\s+)"
+		r".+\b(?:19|20)\d{2}\b",
+		re.IGNORECASE,
+	)
+	for line in raw_lines:
+		if TITLE_RE.match(line):
+			# Prefer the longest matching title (the actual ad title, not breadcrumb)
+			if len(line) > len(title_line):
+				title_line = line
+
+	# --- Step 2: Collect quick-stats block ---
+	# PakWheels shows a quick-stats section right after photos:
+	#   2004
+	#   160,000 km
+	#   Petrol
+	#   Automatic
+	# Find this block: look for a standalone year followed by km/fuel/transmission lines
+	quick_stats: list[str] = []
+	for i, line in enumerate(raw_lines):
+		if re.fullmatch(r"(19|20)\d{2}", line.strip()):
+			# Check if the next few lines look like specs (km, fuel, transmission)
+			window = raw_lines[i : min(len(raw_lines), i + 6)]
+			has_km = any(re.search(r"\d[\d,]*\s?km", w, flags=re.IGNORECASE) for w in window)
+			has_fuel = any(re.search(r"\b(petrol|diesel|hybrid|electric)\b", w, flags=re.IGNORECASE) for w in window)
+			if has_km or has_fuel:
+				quick_stats = [w.strip() for w in window if w.strip()]
+				break
+
+	# --- Step 3: Extract structured spec pairs (Assembly→Local, Engine Capacity→1500 cc) ---
+	structured_specs = _extract_structured_specs(raw_lines)
+
+	# --- Step 4: Extract seller's comments / description ---
+	seller_comments: list[str] = []
+	in_comments = False
+	for i, line in enumerate(raw_lines):
+		lower = line.lower().strip()
+		if lower in ("seller's comments", "seller comments", "description"):
+			in_comments = True
+			continue
+		if in_comments:
+			# Stop at known section boundaries
+			if lower in ("similar ads", "safety tips", "×", "reduce price", "seller details", "car features", ""):
+				break
+			if re.search(r"\b(mention pakwheels|pkr\s?\d)", lower, flags=re.IGNORECASE):
+				break
+			if len(line.strip()) > 3:
+				seller_comments.append(line.strip())
+
+	# --- Step 5: Assemble the clean text ---
+	parts: list[str] = []
+	if title_line:
+		parts.append(f"Title: {title_line}")
+	if quick_stats:
+		parts.append("Quick Stats: " + " | ".join(quick_stats))
+	if structured_specs:
+		parts.append("Specs:\n" + "\n".join(structured_specs))
+	if seller_comments:
+		parts.append("Description: " + " ".join(seller_comments[:5]))
+
+	if parts:
+		return "\n\n".join(parts)
+
+	# Fallback: remove navigation and SEO junk
 	cleaned = re.sub(r"^(Used Cars|New Cars|Bikes|Auto Store|Videos|Forums|Blog|PakWheels.*|Auction Sheet.*|MTMIS.*|DLIMS.*).*$", "", text, flags=re.MULTILINE | re.IGNORECASE)
 	cleaned = re.sub(r"(?s)(SIMILAR ADS|Used [A-Za-z ]+ by Year|Used [A-Za-z ]+ by City|Notify Me).*$", "", cleaned, flags=re.IGNORECASE)
 	cleaned = re.sub(r"^(Send Message|Show Phone Number|Learn More|×|Previous|Next)$", "", cleaned, flags=re.MULTILINE | re.IGNORECASE)
@@ -214,9 +327,49 @@ def clean_pakwheels(text: str) -> str:
 
 
 def clean_olx(text: str) -> str:
-	# Remove everything before the breadcrumbs: Home\nVehicles\nCars
+	raw_lines = [ln.strip() for ln in text.splitlines()]
+
+	# --- Step 1: Try structured spec extraction (works for OLX's key-value layout too) ---
+	structured_specs = _extract_structured_specs(raw_lines)
+
+	# --- Step 2: Extract the ad title ---
+	# OLX titles often appear after breadcrumbs; look for brand + year or brand + model patterns
+	title_line = ""
+	TITLE_RE = re.compile(
+		r"^(?:(?:Toyota|Honda|Suzuki|Kia|Hyundai|Changan|MG|BMW|Audi|"
+		r"Daihatsu|Nissan|Mercedes|Mitsubishi|Lexus|Mazda|Subaru|Isuzu|FAW|BAIC|"
+		r"Prince|United|Chery|Proton|Peugeot|Volkswagen|Land Rover|Jeep)\s+)"
+		r".+",
+		re.IGNORECASE,
+	)
+	for line in raw_lines:
+		if TITLE_RE.match(line) and len(line) > len(title_line):
+			title_line = line
+
+	# --- Step 3: Collect quick-stats (OLX sometimes has inline stats) ---
+	quick_stats: list[str] = []
+	for i, line in enumerate(raw_lines):
+		if re.fullmatch(r"(19|20)\d{2}", line):
+			window = raw_lines[i : min(len(raw_lines), i + 6)]
+			has_km = any(re.search(r"\d[\d,]*\s?km", w, flags=re.IGNORECASE) for w in window)
+			if has_km:
+				quick_stats = [w for w in window if w]
+				break
+
+	# --- Step 4: Assemble ---
+	parts: list[str] = []
+	if title_line:
+		parts.append(f"Title: {title_line}")
+	if quick_stats:
+		parts.append("Quick Stats: " + " | ".join(quick_stats))
+	if structured_specs:
+		parts.append("Specs:\n" + "\n".join(structured_specs))
+
+	if parts:
+		return "\n\n".join(parts)
+
+	# Fallback: original regex-based cleaning
 	text = re.sub(r"(?s)^.*?(?=Home\nVehicles\nCars)", "", text, flags=re.IGNORECASE)
-	# Remove safety tips and app promos and inspection banners
 	text = re.sub(r"(?s)(Your safety matters to us!|Find amazing deals on the go|Download OLX app now!).*$", "", text, flags=re.IGNORECASE)
 	text = re.sub(r"^(OLX Car Inspection|Buy with confidence|200\+ checkup points|Book Now|Only meet in public).*$", "", text, flags=re.MULTILINE | re.IGNORECASE)
 	text = re.sub(r"^(Find amazing deals on the go|Download OLX app now!|Popular Categories|Trending Searches).*$", "", text, flags=re.MULTILINE | re.IGNORECASE)
@@ -261,38 +414,58 @@ def extract_categorical_by_regex(cleaned_text: str) -> dict[str, Any]:
 	lines = [ln.strip() for ln in cleaned_text.splitlines() if ln.strip()]
 	res: dict[str, Any] = {"fuel_type": None, "transmission": None, "assembly": None, "brand": None, "model_name": None}
 
-	# Fuel type: prefer whole-line tokens or labeled 'fuel' lines
+	# --- Fuel type ---
+	# Check Quick Stats line first (highest signal)
 	for line in lines:
 		ll = line.lower()
-		exact_fuel = re.fullmatch(r"\s*(petrol|diesel|hybrid|electric)\s*", ll, flags=re.IGNORECASE)
-		if exact_fuel:
-			res["fuel_type"] = exact_fuel.group(1).lower()
-			break
-		if "fuel" in ll:
-			m = re.search(r"\b(petrol|diesel|hybrid|electric)\b", ll, flags=re.IGNORECASE)
+		if ll.startswith("quick stats:"):
+			m = re.search(r"\b(petrol|diesel|hybrid|electric|cng|lpg)\b", ll, flags=re.IGNORECASE)
 			if m:
 				res["fuel_type"] = m.group(1).lower()
 				break
-
-	# last resort: anywhere in text
+	# Then check standalone or labeled fuel lines
 	if res["fuel_type"] is None:
-		m_any = re.search(r"\b(petrol|diesel|hybrid|electric)\b", lower, flags=re.IGNORECASE)
+		for line in lines:
+			ll = line.lower()
+			exact_fuel = re.fullmatch(r"\s*(petrol|diesel|hybrid|electric|cng|lpg)\s*", ll, flags=re.IGNORECASE)
+			if exact_fuel:
+				res["fuel_type"] = exact_fuel.group(1).lower()
+				break
+			if "fuel" in ll:
+				m = re.search(r"\b(petrol|diesel|hybrid|electric|cng|lpg)\b", ll, flags=re.IGNORECASE)
+				if m:
+					res["fuel_type"] = m.group(1).lower()
+					break
+	# Last resort: anywhere
+	if res["fuel_type"] is None:
+		m_any = re.search(r"\b(petrol|diesel|hybrid|electric|cng|lpg)\b", lower, flags=re.IGNORECASE)
 		if m_any:
 			res["fuel_type"] = m_any.group(1).lower()
 
-	# Transmission: prefer exact 'automatic' or 'manual'; map common variants
-	trans_exact = None
+	# --- Transmission ---
+	# Check Quick Stats line first
 	for line in lines:
-		m = re.search(r"\b(automatic|manual)\b", line, flags=re.IGNORECASE)
-		if m:
-			trans_exact = m.group(1).lower()
-			break
-	if trans_exact:
-		res["transmission"] = trans_exact
-	else:
+		ll = line.lower()
+		if ll.startswith("quick stats:"):
+			m = re.search(r"\b(automatic|manual)\b", ll, flags=re.IGNORECASE)
+			if m:
+				res["transmission"] = m.group(1).lower()
+				break
+	# Then check any line
+	if res["transmission"] is None:
+		for line in lines:
+			m = re.search(r"\b(automatic|manual)\b", line, flags=re.IGNORECASE)
+			if m:
+				res["transmission"] = m.group(1).lower()
+				break
+	# Map common variant names
+	if res["transmission"] is None:
 		variant_map = {
 			"prosmatec": "automatic",
+			"prosmatic": "automatic",
 			"cvt": "automatic",
+			"tiptronic": "automatic",
+			"dsg": "automatic",
 			"semi-automatic": "automatic",
 			"semi automatic": "automatic",
 			"auto": "automatic",
@@ -304,93 +477,97 @@ def extract_categorical_by_regex(cleaned_text: str) -> dict[str, Any]:
 				res["transmission"] = mapped
 				break
 
-	# Assembly
-	asm_match = re.search(r"\b(local|imported|import)\b", lower, flags=re.IGNORECASE)
-	if asm_match:
-		asm = asm_match.group(1).lower()
-		if asm == "import":
-			asm = "imported"
-		res["assembly"] = asm
+	# --- Assembly ---
+	# Prefer label→value pair
+	for i, line in enumerate(lines):
+		if line.lower().strip() == "assembly" and i + 1 < len(lines):
+			val = lines[i + 1].lower().strip()
+			if val in ("local", "imported"):
+				res["assembly"] = val
+				break
+	if res["assembly"] is None:
+		asm_match = re.search(r"\b(local|imported|import)\b", lower, flags=re.IGNORECASE)
+		if asm_match:
+			asm = asm_match.group(1).lower()
+			if asm == "import":
+				asm = "imported"
+			res["assembly"] = asm
 
-	# Brand and model heuristics
+	# --- Brand and Model ---
 	COMMON_BRANDS = [
-		"Toyota",
-		"Honda",
-		"Suzuki",
-		"Kia",
-		"Hyundai",
-		"Changan",
-		"MG",
-		"BMW",
-		"Audi",
-		"Daihatsu",
-		"Nissan",
+		"Toyota", "Honda", "Suzuki", "Kia", "Hyundai", "Changan", "MG", "BMW",
+		"Audi", "Daihatsu", "Nissan", "Mercedes", "Mitsubishi", "Lexus", "Mazda",
+		"Subaru", "Isuzu", "FAW", "BAIC", "Prince", "United", "Chery", "Proton",
+		"Peugeot", "Volkswagen", "Land Rover", "Jeep",
 	]
-
+	CITY_TOKENS = [
+		"Rawalpindi", "Karachi", "Lahore", "Islamabad", "Peshawar", "Multan",
+		"Faisalabad", "Gujranwala", "Sialkot", "Sargodha", "Bahawalpur",
+		"Hyderabad", "Quetta", "Abbottabad", "Mardan",
+	]
+	# Noise tokens that should not be part of model_name
+	NOISE_MODEL_TOKENS = {
+		"cars", "car", "for", "sale", "in", "price", "pakistan", "used",
+		"prices", "specs", "features", "variants", "review",
+	}
 
 	brand_found = None
 	model_found = None
-	CITY_TOKENS = ["Rawalpindi", "Karachi", "Lahore", "Islamabad", "Peshawar", "Multan", "Faisalabad", "Gujranwala", "Sialkot", "Sargodha", "Bahawalpur"]
 
-	# Prefer brand+model lines where model is not a city token. Search by brand first to prioritize correct brand detection.
-	for b in COMMON_BRANDS:
-		for line in lines:
-			if re.search(r"\b" + re.escape(b) + r"\b", line, flags=re.IGNORECASE):
-				# try to capture a model name that appears after the brand and before a year/city/km/price
+	# PRIORITY 1: Parse from "Title: Brand Model Variant Year" line (our structured output)
+	for line in lines:
+		if line.lower().startswith("title:"):
+			title_text = line[6:].strip()  # Remove "Title: " prefix
+			for b in COMMON_BRANDS:
 				m = re.search(
-					r"\b" + re.escape(b) + r"\b\s+(?P<model>[A-Za-z0-9 \-\/]+?)(?:\s+\b(19\d{2}|20\d{2})\b|\s+\b(?:" + "|".join(CITY_TOKENS) + r")\b|\s+\d[\d,]*\s?km\b|\s+pkR\b|$)",
-					line,
+					r"\b" + re.escape(b) + r"\b\s+(?P<model>[A-Za-z0-9][A-Za-z0-9 \-\/]*?)(?:\s+\b(?:19|20)\d{2}\b|$)",
+					title_text,
 					flags=re.IGNORECASE,
 				)
 				if m:
-					cand = m.group("model").strip()
-					cand = re.sub(r"\b(automatic|petrol|diesel|cc|km|lacs?)\b.*$", "", cand, flags=re.IGNORECASE).strip()
-					cand = re.sub(r"[\|\,]+$", "", cand).strip()
-					# if candidate looks like a city, skip it
-					if any(re.search(r"\b" + re.escape(c) + r"\b", cand, flags=re.IGNORECASE) for c in CITY_TOKENS):
-						continue
 					brand_found = b.lower()
-					model_found = cand
+					cand = m.group("model").strip()
+					# Extract just the core model name (first 1-2 words, strip variants like "EXi Prosmatec")
+					model_parts = cand.split()
+					if model_parts:
+						# The first word is almost always the model name
+						model_found = model_parts[0].lower()
 					break
-		if brand_found:
 			break
 
-	# If not found in first lines, search entire text for a brand occurrence and nearby tokens
+	# PRIORITY 2: Search all lines for brand+model patterns
 	if not brand_found:
 		for b in COMMON_BRANDS:
-			m = re.search(r"\b" + re.escape(b) + r"\b(.{0,40})\b(\w+)?", cleaned_text, flags=re.IGNORECASE)
-			if m:
-				brand_found = b.lower()
-				if m.group(2):
-					model_found = m.group(2).strip()
-					break
-
-	# As a fallback, try to parse the title-like first long line
-	if not model_found and lines:
-		first = lines[0]
-		m = re.search(r"(?:Used\s+)?(?P<title>.+?)\s+\b(19\d{2}|20\d{2})\b", first, flags=re.IGNORECASE)
-		if m:
-			t = m.group("title")
-			# attempt to split brand + model
-			for b in COMMON_BRANDS:
-				if re.search(r"\b" + re.escape(b) + r"\b", t, flags=re.IGNORECASE):
-					brand_found = b.lower()
-					model_found = re.sub(r"\b" + re.escape(b) + r"\b", "", t, flags=re.IGNORECASE).strip()
-					# if model looks like a city, skip
-					if any(re.search(r"\b" + re.escape(c) + r"\b", model_found, flags=re.IGNORECASE) for c in CITY_TOKENS):
-						model_found = None
-					break
+			for line in lines:
+				if re.search(r"\b" + re.escape(b) + r"\b", line, flags=re.IGNORECASE):
+					m = re.search(
+						r"\b" + re.escape(b) + r"\b\s+(?P<model>[A-Za-z0-9 \-\/]+?)(?:\s+\b(?:19|20)\d{2}\b|\s+\b(?:" + "|".join(CITY_TOKENS) + r")\b|\s+\d[\d,]*\s?km\b|\s+pkr\b|$)",
+						line,
+						flags=re.IGNORECASE,
+					)
+					if m:
+						cand = m.group("model").strip()
+						cand = re.sub(r"\b(automatic|manual|petrol|diesel|cc|km|lacs?)\b.*$", "", cand, flags=re.IGNORECASE).strip()
+						cand = re.sub(r"[\|,]+$", "", cand).strip()
+						# Reject city names
+						if any(re.search(r"\b" + re.escape(c) + r"\b", cand, flags=re.IGNORECASE) for c in CITY_TOKENS):
+							continue
+						# Reject noise words
+						cand_words = [w for w in cand.lower().split() if w not in NOISE_MODEL_TOKENS]
+						if not cand_words:
+							continue
+						brand_found = b.lower()
+						model_found = cand_words[0]  # Core model name
+						break
+			if brand_found:
+				break
 
 	if brand_found:
 		res["brand"] = brand_found
 	if model_found:
-		# normalize model by removing year tokens and stray separators
-		model_found = re.sub(r"\b(19\d{2}|20\d{2})\b", "", model_found)
+		model_found = re.sub(r"\b(19\d{2}|20\d{2})\b", "", model_found).strip()
 		model_found = re.sub(r"[\|\-\/]+", " ", model_found).strip()
-		# if the extracted model is a known city, drop it
-		if any(re.search(r"\b" + re.escape(c) + r"\b", model_found, flags=re.IGNORECASE) for c in CITY_TOKENS):
-			model_found = None
-		else:
+		if model_found and not any(re.search(r"\b" + re.escape(c) + r"\b", model_found, flags=re.IGNORECASE) for c in CITY_TOKENS):
 			res["model_name"] = model_found.lower()
 
 	return res
@@ -475,19 +652,37 @@ def call_google_ner(cleaned_text: str) -> dict[str, Any]:
 	if not api_key:
 		raise RuntimeError("Set GOOGLE_API_KEY_NER_CARS in your environment or .env file.")
 
-	prompt = f"""
-Extract structured vehicle fields from the cleaned car listing text below.
+	prompt = f"""\
+You are a vehicle data extraction assistant. Extract structured fields from the car listing text below.
 
 Return ONLY a JSON object with exactly these keys:
 {json.dumps({field: None for field in TARGET_FIELDS}, indent=2)}
 
 Rules:
-- Use null when a value is not explicitly present.
-- model_year, mileage_km, and engine_capacity_cc must be numbers or null.
-- fuel_type, transmission, assembly, brand, and model_name should be lowercase strings or null.
-- Do not guess.
+- ONLY extract values that are explicitly stated in the text. Never guess or infer.
+- model_year, mileage_km, engine_capacity_cc must be integers or null.
+- mileage_km: extract the number in kilometres (e.g. "160,000 km" → 160000).
+- engine_capacity_cc: extract the number in cc (e.g. "1500 cc" → 1500).
+- fuel_type: one of "petrol", "diesel", "hybrid", "electric", "cng", "lpg", or null.
+- transmission: "automatic" or "manual" or null. "Prosmatec" / "CVT" / "Tiptronic" = "automatic".
+- assembly: "local" or "imported" or null.
+- brand: the car manufacturer in lowercase (e.g. "honda", "toyota").
+- model_name: the car model in lowercase (e.g. "civic", "corolla"). Do NOT include the brand, year, or variant.
+- Use null when a value is not present.
 
-Cleaned text:
+Example input:
+  Title: Honda Civic EXi Prosmatec 2004
+  Quick Stats: 2004 | 160,000 km | Petrol | Automatic
+  Specs:
+  Assembly
+  Local
+  Engine Capacity
+  1500 cc
+
+Example output:
+  {{"model_year": 2004, "mileage_km": 160000, "engine_capacity_cc": 1500, "fuel_type": "petrol", "transmission": "automatic", "assembly": "local", "brand": "honda", "model_name": "civic"}}
+
+Now extract from this listing:
 {cleaned_text}
 """.strip()
 
