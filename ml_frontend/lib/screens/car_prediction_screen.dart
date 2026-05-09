@@ -26,13 +26,13 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
   final _modelYearCtrl = TextEditingController(text: '2020');
   final _mileageCtrl = TextEditingController(text: '50000');
   final _engineCapCtrl = TextEditingController(text: '1300');
+  final _brandCtrl = TextEditingController();
+  final _modelNameCtrl = TextEditingController();
 
   // Dropdown selections
   String? _fuelType;
   String? _transmission;
   String? _assembly;
-  String? _brand;
-  String? _modelName;
 
   // State
   bool _isLoading = false;
@@ -58,8 +58,21 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
     _fuelType = car['fuel_types']?.firstOrNull;
     _transmission = car['transmissions']?.firstOrNull;
     _assembly = car['assemblies']?.firstOrNull;
-    _brand = car['brands']?.firstOrNull;
-    _modelName = car['model_names']?.firstOrNull;
+    _brandCtrl.text = car['brands']?.firstOrNull ?? '';
+    _modelNameCtrl.text = car['model_names']?.firstOrNull ?? '';
+  }
+
+  @override
+  void didUpdateWidget(covariant CarPredictionScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    final car = widget.options.car;
+    if (_brandCtrl.text.trim().isEmpty) {
+      _brandCtrl.text = car['brands']?.firstOrNull ?? '';
+    }
+    if (_modelNameCtrl.text.trim().isEmpty) {
+      _modelNameCtrl.text = car['model_names']?.firstOrNull ?? '';
+    }
   }
 
   @override
@@ -69,6 +82,8 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
     _modelYearCtrl.dispose();
     _mileageCtrl.dispose();
     _engineCapCtrl.dispose();
+    _brandCtrl.dispose();
+    _modelNameCtrl.dispose();
     super.dispose();
   }
 
@@ -117,13 +132,11 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
             widget.options.car['assemblies']!.contains(extracted.assembly)) {
           _assembly = extracted.assembly;
         }
-        if (extracted.brand != null &&
-            widget.options.car['brands']!.contains(extracted.brand)) {
-          _brand = extracted.brand;
+        if (extracted.brand != null) {
+          _brandCtrl.text = extracted.brand!;
         }
-        if (extracted.modelName != null &&
-            widget.options.car['model_names']!.contains(extracted.modelName)) {
-          _modelName = extracted.modelName;
+        if (extracted.modelName != null) {
+          _modelNameCtrl.text = extracted.modelName!;
         }
       });
 
@@ -160,8 +173,8 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
         fuelType: _fuelType!,
         transmission: _transmission!,
         assembly: _assembly!,
-        brand: _brand!,
-        modelName: _modelName!,
+        brand: _brandCtrl.text.trim(),
+        modelName: _modelNameCtrl.text.trim(),
       );
       final output = await _api.predictCarPrice(input);
       setState(() {
@@ -389,18 +402,24 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
                     (v) => setState(() => _assembly = v),
                   ),
                   const SizedBox(height: 14),
-                  _dropdown(
-                    'Brand',
-                    car['brands'] ?? [],
-                    _brand,
-                    (v) => setState(() => _brand = v),
+                  _textLookupField(
+                    label: 'Brand',
+                    controller: _brandCtrl,
+                    options: car['brands'] ?? [],
                   ),
                   const SizedBox(height: 14),
-                  _dropdown(
-                    'Model Name',
-                    car['model_names'] ?? [],
-                    _modelName,
-                    (v) => setState(() => _modelName = v),
+                  _textLookupField(
+                    label: 'Model Name',
+                    controller: _modelNameCtrl,
+                    options: car['model_names'] ?? [],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Loaded ${car['brands']?.length ?? 0} brands and ${car['model_names']?.length ?? 0} model options.',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -475,6 +494,165 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
       onChanged: onChanged,
       validator: (v) => v == null ? 'Please select' : null,
     );
+  }
+
+  Widget _textLookupField({
+    required String label,
+    required TextEditingController controller,
+    required List<String> options,
+  }) {
+    return TextFormField(
+      controller: controller,
+      readOnly: true,
+      onTap: options.isEmpty
+          ? null
+          : () => _openOptionPicker(label, options, controller),
+      style: const TextStyle(color: AppColors.textPrimary),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: 'Select from list',
+        suffixIcon: const Icon(Icons.arrow_drop_down_rounded),
+      ),
+      validator: (v) {
+        if (v == null || v.trim().isEmpty) {
+          return 'Required';
+        }
+        return null;
+      },
+    );
+  }
+
+  Future<void> _openOptionPicker(
+    String title,
+    List<String> options,
+    TextEditingController targetCtrl,
+  ) async {
+    final searchCtrl = TextEditingController();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.45),
+      builder: (context) {
+        final screenHeight = MediaQuery.of(context).size.height;
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+          child: SafeArea(
+            top: false,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Container(
+                constraints: BoxConstraints(maxHeight: screenHeight * 0.82),
+                decoration: BoxDecoration(
+                  color: AppColors.bgCard,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: StatefulBuilder(
+                  builder: (context, setSheetState) {
+                    final q = searchCtrl.text.trim().toLowerCase();
+                    final filtered = q.isEmpty
+                        ? options
+                        : options
+                              .where((e) => e.toLowerCase().contains(q))
+                              .toList();
+
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Select one option',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          TextField(
+                            controller: searchCtrl,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                            ),
+                            decoration: const InputDecoration(
+                              hintText: 'Search options',
+                              prefixIcon: Icon(Icons.search),
+                            ),
+                            onChanged: (_) => setSheetState(() {}),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            '${filtered.length} results',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Expanded(
+                            child: filtered.isEmpty
+                                ? Center(
+                                    child: Text(
+                                      'No matching options',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  )
+                                : ListView.separated(
+                                    itemCount: filtered.length,
+                                    separatorBuilder: (_, __) => const Divider(
+                                      height: 1,
+                                      color: AppColors.border,
+                                    ),
+                                    itemBuilder: (context, index) {
+                                      final item = filtered[index];
+                                      return ListTile(
+                                        contentPadding: EdgeInsets.zero,
+                                        title: Text(
+                                          item,
+                                          style: const TextStyle(
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                        trailing: const Icon(
+                                          Icons.chevron_right_rounded,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                        onTap: () {
+                                          targetCtrl.text = item;
+                                          Navigator.of(context).pop();
+                                        },
+                                      );
+                                    },
+                                  ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    searchCtrl.dispose();
   }
 
   Widget _predictButton() {

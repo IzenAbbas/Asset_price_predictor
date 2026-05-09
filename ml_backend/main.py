@@ -112,11 +112,10 @@ class VehicleURLInput(BaseModel):
 
 @app.post("/extract/vehicle-fields", response_model=VehicleFieldsOutput, tags=["extraction"])
 def extract_vehicle_fields_endpoint(input_data: VehicleURLInput):
-    """Extract vehicle fields (NER) from a PakWheels or OLX listing URL.
+    """Extract vehicle fields (NER) from a PakWheels listing URL.
     
     Supported domains:
       - PakWheels: https://www.pakwheels.com/...
-      - OLX: https://www.olx.com.pk/...
     """
     if not extract_vehicle_fields:
         raise HTTPException(
@@ -127,11 +126,11 @@ def extract_vehicle_fields_endpoint(input_data: VehicleURLInput):
     try:
         # Validate URL domain
         lower_url = input_data.url.lower()
-        if not ("pakwheels" in lower_url or "olx" in lower_url):
+        if "pakwheels" not in lower_url:
             raise HTTPException(
                 status_code=400,
-                detail="Unsupported URL domain. Only PakWheels and OLX are supported. "
-                       "Example: https://www.pakwheels.com/... or https://www.olx.com.pk/..."
+                detail="Unsupported URL domain. Only PakWheels is supported. "
+                       "Example: https://www.pakwheels.com/..."
             )
         
         # Extract fields using NER

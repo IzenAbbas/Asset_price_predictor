@@ -68,6 +68,14 @@ class _AppShellState extends State<AppShell> {
     }
   }
 
+  Future<void> _refreshOptions() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    await _loadOptions();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -92,6 +100,13 @@ class _AppShellState extends State<AppShell> {
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Refresh options',
+            onPressed: _refreshOptions,
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+        ],
       ),
 
       // ── Body ──

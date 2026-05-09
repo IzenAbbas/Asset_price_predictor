@@ -184,7 +184,7 @@ def clean_listing_text(raw_text: str, title: str = "") -> str:
 
 
 def _extract_structured_specs(raw_lines: list[str]) -> list[str]:
-	"""Scan raw lines for structured label→value pairs used on PakWheels / OLX.
+	"""Scan raw lines for structured label→value pairs used on PakWheels.
 
 	PakWheels uses a pattern like:
 	    Assembly        (label line)
@@ -279,25 +279,29 @@ def clean_pakwheels(text: str) -> str:
 			# Check if the next few lines look like specs (km, fuel, transmission)
 			window = raw_lines[i : min(len(raw_lines), i + 6)]
 			has_km = any(re.search(r"\d[\d,]*\s?km", w, flags=re.IGNORECASE) for w in window)
-			has_fuel = any(re.search(r"\b(petrol|diesel|hybrid|electric)\b", w, flags=re.IGNORECASE) for w in window)
-			if has_km or has_fuel:
-				quick_stats = [w.strip() for w in window if w.strip()]
+			has_fuel = any(re.search(r"\b(petrol|diesel|hybrid|electric|cng|lpg)\b", w, flags=re.IGNORECASE) for w in window)
+			has_price = any(re.search(r"\bpkr\b", w, flags=re.IGNORECASE) for w in window)
+			# Require BOTH km and fuel, and NO price line (to skip the stats-bar near PKR)
+			if has_km and has_fuel and not has_price:
+				quick_stats = [w.strip() for w in window if w.strip() and not re.search(r"\bpkr\b|never buy|click photo|schedule|featured|previous|next", w, flags=re.IGNORECASE)]
 				break
 
 	# --- Step 3: Extract structured spec pairs (Assembly→Local, Engine Capacity→1500 cc) ---
 	structured_specs = _extract_structured_specs(raw_lines)
 
 	# --- Step 4: Extract seller's comments / description ---
+	# PakWheels has "Seller's Comments" appearing twice: once in the tab nav
+	# and once as the actual section header. We want the LAST occurrence.
 	seller_comments: list[str] = []
-	in_comments = False
+	comment_start_idx = -1
 	for i, line in enumerate(raw_lines):
-		lower = line.lower().strip()
-		if lower in ("seller's comments", "seller comments", "description"):
-			in_comments = True
-			continue
-		if in_comments:
+		if line.lower().strip() in ("seller's comments", "seller comments"):
+			comment_start_idx = i  # Keep updating to get the last occurrence
+	if comment_start_idx >= 0:
+		for line in raw_lines[comment_start_idx + 1:]:
+			lower = line.lower().strip()
 			# Stop at known section boundaries
-			if lower in ("similar ads", "safety tips", "×", "reduce price", "seller details", "car features", ""):
+			if lower in ("similar ads", "safety tips", "×", "reduce price", "seller details", ""):
 				break
 			if re.search(r"\b(mention pakwheels|pkr\s?\d)", lower, flags=re.IGNORECASE):
 				break
@@ -326,55 +330,7 @@ def clean_pakwheels(text: str) -> str:
 	return cleaned.strip()
 
 
-def clean_olx(text: str) -> str:
-	raw_lines = [ln.strip() for ln in text.splitlines()]
 
-	# --- Step 1: Try structured spec extraction (works for OLX's key-value layout too) ---
-	structured_specs = _extract_structured_specs(raw_lines)
-
-	# --- Step 2: Extract the ad title ---
-	# OLX titles often appear after breadcrumbs; look for brand + year or brand + model patterns
-	title_line = ""
-	TITLE_RE = re.compile(
-		r"^(?:(?:Toyota|Honda|Suzuki|Kia|Hyundai|Changan|MG|BMW|Audi|"
-		r"Daihatsu|Nissan|Mercedes|Mitsubishi|Lexus|Mazda|Subaru|Isuzu|FAW|BAIC|"
-		r"Prince|United|Chery|Proton|Peugeot|Volkswagen|Land Rover|Jeep)\s+)"
-		r".+",
-		re.IGNORECASE,
-	)
-	for line in raw_lines:
-		if TITLE_RE.match(line) and len(line) > len(title_line):
-			title_line = line
-
-	# --- Step 3: Collect quick-stats (OLX sometimes has inline stats) ---
-	quick_stats: list[str] = []
-	for i, line in enumerate(raw_lines):
-		if re.fullmatch(r"(19|20)\d{2}", line):
-			window = raw_lines[i : min(len(raw_lines), i + 6)]
-			has_km = any(re.search(r"\d[\d,]*\s?km", w, flags=re.IGNORECASE) for w in window)
-			if has_km:
-				quick_stats = [w for w in window if w]
-				break
-
-	# --- Step 4: Assemble ---
-	parts: list[str] = []
-	if title_line:
-		parts.append(f"Title: {title_line}")
-	if quick_stats:
-		parts.append("Quick Stats: " + " | ".join(quick_stats))
-	if structured_specs:
-		parts.append("Specs:\n" + "\n".join(structured_specs))
-
-	if parts:
-		return "\n\n".join(parts)
-
-	# Fallback: original regex-based cleaning
-	text = re.sub(r"(?s)^.*?(?=Home\nVehicles\nCars)", "", text, flags=re.IGNORECASE)
-	text = re.sub(r"(?s)(Your safety matters to us!|Find amazing deals on the go|Download OLX app now!).*$", "", text, flags=re.IGNORECASE)
-	text = re.sub(r"^(OLX Car Inspection|Buy with confidence|200\+ checkup points|Book Now|Only meet in public).*$", "", text, flags=re.MULTILINE | re.IGNORECASE)
-	text = re.sub(r"^(Find amazing deals on the go|Download OLX app now!|Popular Categories|Trending Searches).*$", "", text, flags=re.MULTILINE | re.IGNORECASE)
-	text = re.sub(r"\n{2,}", "\n\n", text)
-	return text.strip()
 
 
 def find_number_near_labels(lines: list[str], label_patterns: tuple[str, ...], value_pattern: str) -> int | None:
@@ -403,6 +359,30 @@ def extract_json_block(text: str) -> dict[str, Any]:
 		if match:
 			return json.loads(match.group(0))
 		raise
+
+
+def extract_brand_model_from_url(url: str) -> tuple[str | None, str | None]:
+	"""Infer brand and model from common listing URL slugs.
+
+	Example:
+	- https://www.pakwheels.com/used-cars/honda-civic-2004-for-sale-in-rawalpindi-11465498
+	  -> ("honda", "civic")
+	"""
+	lower_url = (url or "").lower()
+
+	# PakWheels slug: /used-cars/<brand>-<model>-<year>-for-sale-...
+	pk = re.search(r"/used-cars/([a-z0-9-]+)-for-sale", lower_url)
+	if pk:
+		slug = pk.group(1)
+		tokens = [tok for tok in slug.split("-") if tok]
+		if tokens:
+			brand = tokens[0]
+			model_tokens = [tok for tok in tokens[1:] if not re.fullmatch(r"(19|20)\d{2}", tok)]
+			model_name = " ".join(model_tokens).strip() or None
+			return brand or None, model_name
+
+	# OLX style URLs can vary a lot; leave as None for now.
+	return None, None
 
 def extract_categorical_by_regex(cleaned_text: str) -> dict[str, Any]:
 	"""Deterministic regex fallbacks for categorical fields.
@@ -716,23 +696,30 @@ def extract_vehicle_fields(url: str) -> dict[str, Any]:
 	# Use the standalone scraper to fetch cleaned visible text
 	raw_text = scraper_scrape_page_text(url)
 
-	# Decide which platform-specific cleaner to use
 	lower = url.lower()
-	if "pakwheels" in lower:
-		cleaned_text = clean_pakwheels(raw_text)
-	elif "olx." in lower or "olx" in lower:
-		cleaned_text = clean_olx(raw_text)
-	else:
-		raise RuntimeError("Unsupported domain; only PakWheels and OLX are supported.")
+	if "pakwheels" not in lower:
+		raise RuntimeError("Unsupported domain; only PakWheels URLs are supported.")
 
-	# If the platform-specific cleaners didn't find much, fall back to heuristics
+	cleaned_text = clean_pakwheels(raw_text)
+
+	# If the platform-specific cleaner didn't find much, fall back to heuristics
 	if not cleaned_text.strip():
 		cleaned_text = clean_listing_text(raw_text)
 
 	try:
-		return call_google_ner(cleaned_text)
+		result = call_google_ner(cleaned_text)
 	except Exception:
-		return normalize_output({}, cleaned_text)
+		result = normalize_output({}, cleaned_text)
+
+	# Fallback: when NER misses brand/model, infer from URL slug.
+	if result.get("brand") is None or result.get("model_name") is None:
+		url_brand, url_model = extract_brand_model_from_url(url)
+		if result.get("brand") is None and url_brand:
+			result["brand"] = url_brand
+		if result.get("model_name") is None and url_model:
+			result["model_name"] = url_model
+
+	return result
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
@@ -749,14 +736,14 @@ def main() -> int:
 	url = args.url
 	if not url:
 		try:
-			url = input("Enter PakWheels or OLX listing URL: ").strip()
+			url = input("Enter PakWheels listing URL: ").strip()
 		except EOFError:
 			print("No URL provided.", file=sys.stderr)
 			return 1
 
 	lower = (url or "").lower()
-	if not ("pakwheels" in lower or "olx." in lower or "olx" in lower):
-		print("Error: only PakWheels or OLX URLs are supported.", file=sys.stderr)
+	if "pakwheels" not in lower:
+		print("Error: only PakWheels URLs are supported.", file=sys.stderr)
 		return 1
 
 	try:

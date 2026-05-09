@@ -101,7 +101,7 @@ class MLPredictor:
     def get_dropdown_options(self) -> dict[str, dict[str, list[str]]]:
         return {
             "car": {
-                "fuel_types": _safe_unique(self.car_df, "fuel_type") or ["petrol", "diesel", "hybrid"],
+                "fuel_types": sorted(set((_safe_unique(self.car_df, "fuel_type") or ["petrol", "diesel", "hybrid"]) + ["electric"])),
                 "transmissions": _safe_unique(self.car_df, "transmission") or ["automatic", "manual"],
                 "assemblies": _safe_unique(self.car_df, "assembly") or ["local", "imported"],
                 "brands": _safe_unique(self.car_df, "brand", limit=100) or ["toyota", "honda", "suzuki"],
