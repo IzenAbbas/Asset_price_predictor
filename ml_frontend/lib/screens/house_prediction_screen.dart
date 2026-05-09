@@ -1,5 +1,6 @@
 /// House Price Prediction screen — collects property features and shows
 /// the predicted price from the FastAPI backend.
+library;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/prediction_model.dart';

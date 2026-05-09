@@ -32,6 +32,20 @@ class CarPredictionOutput(BaseModel):
     formatted_price: str
 
 
+# ── Vehicle Field Extraction (NER from URL) ───────────────────────────
+
+class VehicleFieldsOutput(BaseModel):
+    """Extracted vehicle fields from a car listing URL using NER."""
+    model_year: int | None = Field(None, description="Extracted model year")
+    mileage_km: float | None = Field(None, description="Extracted mileage in km")
+    engine_capacity_cc: float | None = Field(None, description="Extracted engine capacity in cc")
+    fuel_type: str | None = Field(None, description="Extracted fuel type (lowercase)")
+    transmission: str | None = Field(None, description="Extracted transmission type (lowercase)")
+    assembly: str | None = Field(None, description="Extracted assembly type (lowercase)")
+    brand: str | None = Field(None, description="Extracted vehicle brand (lowercase)")
+    model_name: str | None = Field(None, description="Extracted model name (lowercase)")
+
+
 # ── House Price Prediction ────────────────────────────────────────────
 
 class HousePredictionInput(BaseModel):

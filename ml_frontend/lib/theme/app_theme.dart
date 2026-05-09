@@ -1,5 +1,6 @@
 /// Application-wide design tokens, theme configuration, and reusable
 /// widget helpers for the Asset Advisor app.
+library;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 

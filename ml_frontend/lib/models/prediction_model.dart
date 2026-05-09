@@ -2,6 +2,7 @@
 ///
 /// These mirror [schemas.py] on the backend so that JSON serialization
 /// is consistent between client and server.
+library;
 
 // ── Car Prediction ──────────────────────────────────────────────────
 
@@ -51,6 +52,43 @@ class CarPredictionOutput {
     return CarPredictionOutput(
       predictedPrice: (json['predicted_price'] as num).toDouble(),
       formattedPrice: json['formatted_price'] as String,
+    );
+  }
+}
+
+// ── Vehicle Field Extraction (NER) ──────────────────────────────────
+
+class VehicleFieldsOutput {
+  final int? modelYear;
+  final double? mileageKm;
+  final double? engineCapacityCc;
+  final String? fuelType;
+  final String? transmission;
+  final String? assembly;
+  final String? brand;
+  final String? modelName;
+
+  VehicleFieldsOutput({
+    this.modelYear,
+    this.mileageKm,
+    this.engineCapacityCc,
+    this.fuelType,
+    this.transmission,
+    this.assembly,
+    this.brand,
+    this.modelName,
+  });
+
+  factory VehicleFieldsOutput.fromJson(Map<String, dynamic> json) {
+    return VehicleFieldsOutput(
+      modelYear: json['model_year'] as int?,
+      mileageKm: (json['mileage_km'] as num?)?.toDouble(),
+      engineCapacityCc: (json['engine_capacity_cc'] as num?)?.toDouble(),
+      fuelType: json['fuel_type'] as String?,
+      transmission: json['transmission'] as String?,
+      assembly: json['assembly'] as String?,
+      brand: json['brand'] as String?,
+      modelName: json['model_name'] as String?,
     );
   }
 }

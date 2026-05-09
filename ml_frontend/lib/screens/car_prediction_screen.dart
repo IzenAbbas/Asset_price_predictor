@@ -1,5 +1,6 @@
 /// Car Price Prediction screen — collects car features and shows the
 /// predicted price from the FastAPI backend.
+library;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/prediction_model.dart';
@@ -20,6 +21,7 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
   final _api = ApiService();
 
   // Controllers
+  final _urlCtrl = TextEditingController();
   final _modelYearCtrl = TextEditingController(text: '2020');
   final _mileageCtrl = TextEditingController(text: '50000');
   final _engineCapCtrl = TextEditingController(text: '1300');
@@ -33,8 +35,10 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
 
   // State
   bool _isLoading = false;
+  bool _isExtracting = false;
   CarPredictionOutput? _result;
   String? _error;
+  String? _extractionError;
 
   late AnimationController _animCtrl;
   late Animation<double> _fadeAnim;
@@ -60,10 +64,74 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
   @override
   void dispose() {
     _animCtrl.dispose();
+    _urlCtrl.dispose();
     _modelYearCtrl.dispose();
     _mileageCtrl.dispose();
     _engineCapCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _extractVehicleFields() async {
+    final url = _urlCtrl.text.trim();
+    if (url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a URL')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isExtracting = true;
+      _extractionError = null;
+    });
+
+    try {
+      final extracted = await _api.extractVehicleFields(url);
+
+      setState(() {
+        _isExtracting = false;
+        _extractionError = null;
+
+        // Auto-fill the form fields
+        if (extracted.modelYear != null) {
+          _modelYearCtrl.text = extracted.modelYear.toString();
+        }
+        if (extracted.mileageKm != null) {
+          _mileageCtrl.text = extracted.mileageKm!.toStringAsFixed(0);
+        }
+        if (extracted.engineCapacityCc != null) {
+          _engineCapCtrl.text = extracted.engineCapacityCc!.toStringAsFixed(0);
+        }
+        if (extracted.fuelType != null && widget.options.car['fuel_types']!.contains(extracted.fuelType)) {
+          _fuelType = extracted.fuelType;
+        }
+        if (extracted.transmission != null && widget.options.car['transmissions']!.contains(extracted.transmission)) {
+          _transmission = extracted.transmission;
+        }
+        if (extracted.assembly != null && widget.options.car['assemblies']!.contains(extracted.assembly)) {
+          _assembly = extracted.assembly;
+        }
+        if (extracted.brand != null && widget.options.car['brands']!.contains(extracted.brand)) {
+          _brand = extracted.brand;
+        }
+        if (extracted.modelName != null && widget.options.car['model_names']!.contains(extracted.modelName)) {
+          _modelName = extracted.modelName;
+        }
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Vehicle details extracted and populated!'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      final errorMsg = e.toString().replaceFirst('Exception: ', '');
+      setState(() {
+        _isExtracting = false;
+        _extractionError = errorMsg;
+      });
+    }
   }
 
   Future<void> _predict() async {

@@ -6,12 +6,14 @@ Endpoints:
   GET  /options      → Dropdown options extracted from CSVs
   POST /predict/car  → Predict car price
   POST /predict/house→ Predict house price
+  POST /extract/vehicle-fields → Extract vehicle fields from URL using NER
 """
 
 from __future__ import annotations
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 from schemas import (
     CarPredictionInput,
@@ -20,8 +22,18 @@ from schemas import (
     HealthResponse,
     HousePredictionInput,
     HousePredictionOutput,
+    VehicleFieldsOutput,
 )
 from predictor import predictor
+
+# Try to import NER functionality
+try:
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from ner_cars import extract_vehicle_fields
+except ImportError:
+    extract_vehicle_fields = None
 
 app = FastAPI(
     title="Asset Price Prediction API",
@@ -89,3 +101,44 @@ def predict_house(input_data: HousePredictionInput):
         return HousePredictionOutput(**result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Vehicle Field Extraction (NER from URL) ────────────────────────────
+
+class VehicleURLInput(BaseModel):
+    """Request body for vehicle field extraction from URL."""
+    url: str
+
+
+@app.post("/extract/vehicle-fields", response_model=VehicleFieldsOutput, tags=["extraction"])
+def extract_vehicle_fields_endpoint(input_data: VehicleURLInput):
+    """Extract vehicle fields (NER) from a PakWheels or OLX listing URL.
+    
+    Supported domains:
+      - PakWheels: https://www.pakwheels.com/...
+      - OLX: https://www.olx.com.pk/...
+    """
+    if not extract_vehicle_fields:
+        raise HTTPException(
+            status_code=503,
+            detail="NER extraction not available. Missing ner_cars module or dependencies."
+        )
+    
+    try:
+        # Validate URL domain
+        lower_url = input_data.url.lower()
+        if not ("pakwheels" in lower_url or "olx" in lower_url):
+            raise HTTPException(
+                status_code=400,
+                detail="Unsupported URL domain. Only PakWheels and OLX are supported. "
+                       "Example: https://www.pakwheels.com/... or https://www.olx.com.pk/..."
+            )
+        
+        # Extract fields using NER
+        result = extract_vehicle_fields(input_data.url)
+        return VehicleFieldsOutput(**result)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Extraction failed: {str(e)}")
