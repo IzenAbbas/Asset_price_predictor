@@ -59,8 +59,10 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
     _transmission = car['transmissions']?.firstOrNull;
     _assembly = car['assemblies']?.firstOrNull;
     _brandCtrl.text = car['brands']?.firstOrNull ?? '';
-    if (_brandCtrl.text.isNotEmpty && widget.options.carBrandModels.containsKey(_brandCtrl.text)) {
-      _modelNameCtrl.text = widget.options.carBrandModels[_brandCtrl.text]?.firstOrNull ?? '';
+    if (_brandCtrl.text.isNotEmpty &&
+        widget.options.carBrandModels.containsKey(_brandCtrl.text)) {
+      _modelNameCtrl.text =
+          widget.options.carBrandModels[_brandCtrl.text]?.firstOrNull ?? '';
     } else {
       _modelNameCtrl.text = '';
     }
@@ -75,8 +77,10 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
       _brandCtrl.text = car['brands']?.firstOrNull ?? '';
     }
     if (_modelNameCtrl.text.trim().isEmpty) {
-      if (_brandCtrl.text.isNotEmpty && widget.options.carBrandModels.containsKey(_brandCtrl.text)) {
-        _modelNameCtrl.text = widget.options.carBrandModels[_brandCtrl.text]?.firstOrNull ?? '';
+      if (_brandCtrl.text.isNotEmpty &&
+          widget.options.carBrandModels.containsKey(_brandCtrl.text)) {
+        _modelNameCtrl.text =
+            widget.options.carBrandModels[_brandCtrl.text]?.firstOrNull ?? '';
       }
     }
   }
@@ -233,14 +237,18 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
                       style: GoogleFonts.inter(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
-                        color: Theme.of(context).brightness == Brightness.dark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? AppColors.textPrimaryDark
+                            : AppColors.textPrimaryLight,
                       ),
                     ),
                     Text(
                       'Estimate used car value in Pakistan',
                       style: GoogleFonts.inter(
                         fontSize: 13,
-                        color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? AppColors.textSecondaryDark
+                            : AppColors.textSecondaryLight,
                       ),
                     ),
                   ],
@@ -424,16 +432,22 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
                     builder: (context) {
                       final selectedBrand = _brandCtrl.text.trim();
                       final hasBrand = selectedBrand.isNotEmpty;
-                      final modelOptions = hasBrand && widget.options.carBrandModels.containsKey(selectedBrand)
+                      final modelOptions =
+                          hasBrand &&
+                              widget.options.carBrandModels.containsKey(
+                                selectedBrand,
+                              )
                           ? widget.options.carBrandModels[selectedBrand]!
                           : <String>[];
-                          
+
                       return _textLookupField(
                         label: 'Model Name',
                         controller: _modelNameCtrl,
                         options: modelOptions,
                         enabled: hasBrand,
-                        hintText: hasBrand ? 'Select from list' : 'Select a brand first',
+                        hintText: hasBrand
+                            ? 'Select from list'
+                            : 'Select a brand first',
                       );
                     },
                   ),
@@ -442,7 +456,9 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
                     'Loaded ${car['brands']?.length ?? 0} brands.',
                     style: GoogleFonts.inter(
                       fontSize: 11,
-                      color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondaryLight,
                     ),
                   ),
                 ],
@@ -574,7 +590,11 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? AppColors.borderDark : AppColors.borderLightTheme),
+                  border: Border.all(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.borderDark
+                        : AppColors.borderLightTheme,
+                  ),
                 ),
                 child: StatefulBuilder(
                   builder: (context, setSheetState) {
@@ -595,7 +615,11 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
                             style: GoogleFonts.inter(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
-                              color: Theme.of(context).brightness == Brightness.dark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? AppColors.textPrimaryDark
+                                  : AppColors.textPrimaryLight,
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -603,7 +627,11 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
                             'Select one option',
                             style: GoogleFonts.inter(
                               fontSize: 12,
-                              color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? AppColors.textSecondaryDark
+                                  : AppColors.textSecondaryLight,
                             ),
                           ),
                           const SizedBox(height: 14),
@@ -620,7 +648,11 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
                             '${filtered.length} results',
                             style: GoogleFonts.inter(
                               fontSize: 12,
-                              color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? AppColors.textSecondaryDark
+                                  : AppColors.textSecondaryLight,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -631,16 +663,25 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
                                       'No matching options',
                                       style: GoogleFonts.inter(
                                         fontSize: 13,
-                                        color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                                        color:
+                                            Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? AppColors.textSecondaryDark
+                                            : AppColors.textSecondaryLight,
                                       ),
                                     ),
                                   )
                                 : ListView.separated(
                                     itemCount: filtered.length,
-                                    separatorBuilder: (context, index) => Divider(
-                                      height: 1,
-                                      color: Theme.of(context).brightness == Brightness.dark ? AppColors.borderDark : AppColors.borderLightTheme,
-                                    ),
+                                    separatorBuilder: (context, index) =>
+                                        Divider(
+                                          height: 1,
+                                          color:
+                                              Theme.of(context).brightness ==
+                                                  Brightness.dark
+                                              ? AppColors.borderDark
+                                              : AppColors.borderLightTheme,
+                                        ),
                                     itemBuilder: (context, index) {
                                       final item = filtered[index];
                                       return ListTile(
@@ -648,12 +689,20 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
                                         title: Text(
                                           item,
                                           style: TextStyle(
-                                            color: Theme.of(context).brightness == Brightness.dark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                                            color:
+                                                Theme.of(context).brightness ==
+                                                    Brightness.dark
+                                                ? AppColors.textPrimaryDark
+                                                : AppColors.textPrimaryLight,
                                           ),
                                         ),
                                         trailing: Icon(
                                           Icons.chevron_right_rounded,
-                                          color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                                          color:
+                                              Theme.of(context).brightness ==
+                                                  Brightness.dark
+                                              ? AppColors.textSecondaryDark
+                                              : AppColors.textSecondaryLight,
                                         ),
                                         onTap: () {
                                           targetCtrl.text = item;
