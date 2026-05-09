@@ -79,6 +79,7 @@ class HousePredictionOutput(BaseModel):
 class DropdownOptions(BaseModel):
     car: dict[str, list[str]]
     house: dict[str, list[str]]
+    car_brand_models: dict[str, list[str]] = Field(default_factory=dict)
 
 
 # ── Health / Status ──────────────────────────────────────────────────

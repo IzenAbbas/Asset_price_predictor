@@ -71,6 +71,33 @@ def _get_frequent_values(df: pd.DataFrame, column: str, min_count: int = 20, lim
     return sorted([str(v).strip().lower() for v in frequent if pd.notna(v)])
 
 
+def _get_brand_models(df: pd.DataFrame, min_count: int = 1) -> dict[str, list[str]]:
+    """Return a dictionary mapping brands to their frequent model names."""
+    if "brand" not in df.columns or "model_name" not in df.columns:
+        return {}
+        
+    brand_models = {}
+    for brand, group in df.groupby("brand"):
+        brand_str = str(brand).strip().lower()
+        if pd.isna(brand) or not brand_str:
+            continue
+            
+        model_counts = group["model_name"].value_counts()
+        frequent_models = model_counts[model_counts >= min_count].index.tolist()
+        
+        models = sorted([str(m).strip().lower() for m in frequent_models if pd.notna(m)])
+        if models:
+            brand_models[brand_str] = models
+            
+    if not brand_models:
+        brand_models = {
+            "toyota": ["corolla altis", "yaris", "fortuner", "hilux"],
+            "honda": ["civic", "city", "br-v"],
+            "suzuki": ["alto", "cultus", "wagon r", "swift"]
+        }
+    return brand_models
+
+
 class MLPredictor:
     """Singleton-style ML predictor that holds both car and house models."""
 
@@ -114,6 +141,7 @@ class MLPredictor:
                 "provinces": _safe_unique(self.house_df, "province_name"),
                 "purposes": _safe_unique(self.house_df, "purpose"),
             },
+            "car_brand_models": _get_brand_models(self.car_df)
         }
 
     # ── Car prediction ────────────────────────────────────────────

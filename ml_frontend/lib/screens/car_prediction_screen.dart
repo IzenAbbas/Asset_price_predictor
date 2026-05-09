@@ -59,7 +59,11 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
     _transmission = car['transmissions']?.firstOrNull;
     _assembly = car['assemblies']?.firstOrNull;
     _brandCtrl.text = car['brands']?.firstOrNull ?? '';
-    _modelNameCtrl.text = car['model_names']?.firstOrNull ?? '';
+    if (_brandCtrl.text.isNotEmpty && widget.options.carBrandModels.containsKey(_brandCtrl.text)) {
+      _modelNameCtrl.text = widget.options.carBrandModels[_brandCtrl.text]?.firstOrNull ?? '';
+    } else {
+      _modelNameCtrl.text = '';
+    }
   }
 
   @override
@@ -71,7 +75,9 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
       _brandCtrl.text = car['brands']?.firstOrNull ?? '';
     }
     if (_modelNameCtrl.text.trim().isEmpty) {
-      _modelNameCtrl.text = car['model_names']?.firstOrNull ?? '';
+      if (_brandCtrl.text.isNotEmpty && widget.options.carBrandModels.containsKey(_brandCtrl.text)) {
+        _modelNameCtrl.text = widget.options.carBrandModels[_brandCtrl.text]?.firstOrNull ?? '';
+      }
     }
   }
 
@@ -406,16 +412,33 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
                     label: 'Brand',
                     controller: _brandCtrl,
                     options: car['brands'] ?? [],
+                    onChanged: (newBrand) {
+                      setState(() {
+                        _modelNameCtrl.text = '';
+                      });
+                    },
                   ),
                   const SizedBox(height: 14),
-                  _textLookupField(
-                    label: 'Model Name',
-                    controller: _modelNameCtrl,
-                    options: car['model_names'] ?? [],
+                  Builder(
+                    builder: (context) {
+                      final selectedBrand = _brandCtrl.text.trim();
+                      final hasBrand = selectedBrand.isNotEmpty;
+                      final modelOptions = hasBrand && widget.options.carBrandModels.containsKey(selectedBrand)
+                          ? widget.options.carBrandModels[selectedBrand]!
+                          : <String>[];
+                          
+                      return _textLookupField(
+                        label: 'Model Name',
+                        controller: _modelNameCtrl,
+                        options: modelOptions,
+                        enabled: hasBrand,
+                        hintText: hasBrand ? 'Select from list' : 'Select a brand first',
+                      );
+                    },
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Loaded ${car['brands']?.length ?? 0} brands and ${car['model_names']?.length ?? 0} model options.',
+                    'Loaded ${car['brands']?.length ?? 0} brands.',
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       color: AppColors.textSecondary,
@@ -500,17 +523,21 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
     required String label,
     required TextEditingController controller,
     required List<String> options,
+    String? hintText,
+    bool enabled = true,
+    void Function(String)? onChanged,
   }) {
     return TextFormField(
       controller: controller,
       readOnly: true,
-      onTap: options.isEmpty
+      enabled: enabled,
+      onTap: (!enabled || options.isEmpty)
           ? null
-          : () => _openOptionPicker(label, options, controller),
+          : () => _openOptionPicker(label, options, controller, onChanged),
       style: const TextStyle(color: AppColors.textPrimary),
       decoration: InputDecoration(
         labelText: label,
-        hintText: 'Select from list',
+        hintText: hintText ?? 'Select from list',
         suffixIcon: const Icon(Icons.arrow_drop_down_rounded),
       ),
       validator: (v) {
@@ -526,6 +553,7 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
     String title,
     List<String> options,
     TextEditingController targetCtrl,
+    void Function(String)? onChanged,
   ) async {
     final searchCtrl = TextEditingController();
 
@@ -634,6 +662,9 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
                                         ),
                                         onTap: () {
                                           targetCtrl.text = item;
+                                          if (onChanged != null) {
+                                            onChanged(item);
+                                          }
                                           Navigator.of(context).pop();
                                         },
                                       );

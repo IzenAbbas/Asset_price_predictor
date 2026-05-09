@@ -162,13 +162,17 @@ class HousePredictionOutput {
 class DropdownOptions {
   final Map<String, List<String>> car;
   final Map<String, List<String>> house;
+  final Map<String, List<String>> carBrandModels;
 
-  DropdownOptions({required this.car, required this.house});
+  DropdownOptions({required this.car, required this.house, required this.carBrandModels});
 
   factory DropdownOptions.fromJson(Map<String, dynamic> json) {
     return DropdownOptions(
       car: _parseOptionMap(json['car'] as Map<String, dynamic>),
       house: _parseOptionMap(json['house'] as Map<String, dynamic>),
+      carBrandModels: json.containsKey('car_brand_models') 
+          ? _parseOptionMap(json['car_brand_models'] as Map<String, dynamic>)
+          : {},
     );
   }
 
