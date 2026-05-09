@@ -6,14 +6,21 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'models/prediction_model.dart';
 import 'screens/car_prediction_screen.dart';
 import 'screens/house_prediction_screen.dart';
 import 'services/api_service.dart';
 import 'theme/app_theme.dart';
+import 'theme/theme_provider.dart';
 
 void main() {
-  runApp(const AssetAdvisorApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeProvider(),
+      child: const AssetAdvisorApp(),
+    ),
+  );
 }
 
 class AssetAdvisorApp extends StatelessWidget {
@@ -21,10 +28,11 @@ class AssetAdvisorApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     return MaterialApp(
       title: 'Asset Advisor',
       debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(),
+      theme: themeProvider.themeData,
       home: const AppShell(),
     );
   }
@@ -101,6 +109,21 @@ class _AppShellState extends State<AppShell> {
           ],
         ),
         actions: [
+          Consumer<ThemeProvider>(
+            builder: (context, themeProvider, child) {
+              return IconButton(
+                tooltip: 'Toggle Theme',
+                onPressed: () {
+                  themeProvider.toggleTheme();
+                },
+                icon: Icon(
+                  themeProvider.isDarkMode
+                      ? Icons.light_mode_rounded
+                      : Icons.dark_mode_rounded,
+                ),
+              );
+            },
+          ),
           IconButton(
             tooltip: 'Refresh options',
             onPressed: _refreshOptions,
@@ -114,48 +137,53 @@ class _AppShellState extends State<AppShell> {
 
       // ── Bottom Navigation ──
       bottomNavigationBar: _options != null
-          ? Container(
-              decoration: BoxDecoration(
-                color: AppColors.bgCard,
-                border: const Border(top: BorderSide(color: AppColors.border)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    blurRadius: 16,
-                    offset: const Offset(0, -4),
+          ? Builder(
+              builder: (context) {
+                final isDark = Theme.of(context).brightness == Brightness.dark;
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    border: Border(top: BorderSide(color: isDark ? AppColors.borderDark : AppColors.borderLightTheme)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: isDark ? Colors.black.withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 16,
+                        offset: const Offset(0, -4),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: NavigationBar(
-                backgroundColor: Colors.transparent,
-                indicatorColor: AppColors.primary.withValues(alpha: 0.2),
-                selectedIndex: _currentTab,
-                onDestinationSelected: (i) => setState(() => _currentTab = i),
-                destinations: const [
-                  NavigationDestination(
-                    icon: Icon(
-                      Icons.directions_car_outlined,
-                      color: AppColors.textSecondary,
-                    ),
-                    selectedIcon: Icon(
-                      Icons.directions_car_rounded,
-                      color: AppColors.primaryLight,
-                    ),
-                    label: 'Car',
+                  child: NavigationBar(
+                    backgroundColor: Colors.transparent,
+                    indicatorColor: isDark ? AppColors.primary.withValues(alpha: 0.2) : AppColors.primary.withValues(alpha: 0.1),
+                    selectedIndex: _currentTab,
+                    onDestinationSelected: (i) => setState(() => _currentTab = i),
+                    destinations: [
+                      NavigationDestination(
+                        icon: Icon(
+                          Icons.directions_car_outlined,
+                          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                        ),
+                        selectedIcon: Icon(
+                          Icons.directions_car_rounded,
+                          color: isDark ? AppColors.primaryLight : AppColors.primary,
+                        ),
+                        label: 'Car',
+                      ),
+                      NavigationDestination(
+                        icon: Icon(
+                          Icons.home_outlined,
+                          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                        ),
+                        selectedIcon: Icon(
+                          Icons.home_rounded,
+                          color: AppColors.accent,
+                        ),
+                        label: 'House',
+                      ),
+                    ],
                   ),
-                  NavigationDestination(
-                    icon: Icon(
-                      Icons.home_outlined,
-                      color: AppColors.textSecondary,
-                    ),
-                    selectedIcon: Icon(
-                      Icons.home_rounded,
-                      color: AppColors.accent,
-                    ),
-                    label: 'House',
-                  ),
-                ],
-              ),
+                );
+              }
             )
           : null,
     );
@@ -174,7 +202,7 @@ class _AppShellState extends State<AppShell> {
               'Connecting to prediction server...',
               style: GoogleFonts.inter(
                 fontSize: 14,
-                color: AppColors.textSecondary,
+                color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
               ),
             ),
           ],
@@ -202,7 +230,7 @@ class _AppShellState extends State<AppShell> {
                   style: GoogleFonts.inter(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).brightness == Brightness.dark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -211,7 +239,7 @@ class _AppShellState extends State<AppShell> {
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
                     fontSize: 13,
-                    color: AppColors.textSecondary,
+                    color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
                   ),
                 ),
                 const SizedBox(height: 20),

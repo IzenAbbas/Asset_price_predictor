@@ -144,12 +144,12 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
                         style: GoogleFonts.inter(
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                          color: Theme.of(context).brightness == Brightness.dark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                         )),
                     Text('Estimate property value in Pakistan',
                         style: GoogleFonts.inter(
                           fontSize: 13,
-                          color: AppColors.textSecondary,
+                          color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
                         )),
                   ],
                 ),
@@ -279,7 +279,6 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
       keyboardType: isInt
           ? TextInputType.number
           : const TextInputType.numberWithOptions(decimal: true),
-      style: const TextStyle(color: AppColors.textPrimary),
       decoration: InputDecoration(labelText: label, hintText: hint),
       validator: (v) {
         if (v == null || v.isEmpty) return 'Required';
@@ -294,7 +293,6 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
       TextEditingController ctrl, String label, String hint) {
     return TextFormField(
       controller: ctrl,
-      style: const TextStyle(color: AppColors.textPrimary),
       decoration: InputDecoration(labelText: label, hintText: hint),
       validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
     );
@@ -305,8 +303,7 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
     return DropdownButtonFormField<String>(
       initialValue: items.contains(value) ? value : null,
       isExpanded: true,
-      dropdownColor: AppColors.bgCard,
-      style: const TextStyle(color: AppColors.textPrimary),
+      dropdownColor: Theme.of(context).colorScheme.surface,
       decoration: InputDecoration(labelText: label),
       items: items
           .map((e) => DropdownMenuItem(value: e, child: Text(e)))
