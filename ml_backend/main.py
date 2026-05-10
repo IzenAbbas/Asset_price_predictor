@@ -27,19 +27,13 @@ from schemas import (
 )
 from predictor import predictor
 
-# Try to import NER functionality
+# Try to import NER functionality (modules are co-located in ml_backend/)
 try:
-    import sys
-    from pathlib import Path
-    sys.path.insert(0, str(Path(__file__).parent.parent))
     from ner_cars import extract_vehicle_fields
 except ImportError:
     extract_vehicle_fields = None
 
 try:
-    import sys
-    from pathlib import Path
-    sys.path.insert(0, str(Path(__file__).parent.parent))
     from ner_houses import extract_house_fields
 except ImportError:
     extract_house_fields = None

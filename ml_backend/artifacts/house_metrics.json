@@ -1,0 +1,27 @@
+{
+  "selected_model": "linear_log_target",
+  "test_mae": 8822885.278479097,
+  "test_rmse": 24732928.954257417,
+  "test_r2": 0.5061742752431648,
+  "features": {
+    "numeric": [
+      "Total_Area",
+      "bedrooms",
+      "baths",
+      "latitude",
+      "longitude",
+      "listing_year",
+      "listing_month"
+    ],
+    "categorical": [
+      "property_type",
+      "location",
+      "city",
+      "province_name",
+      "purpose"
+    ]
+  },
+  "artifacts": {
+    "model_path": "D:\\ai_project\\artifacts\\house_price_best_model.pkl"
+  }
+}

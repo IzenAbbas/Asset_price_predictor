@@ -1,0 +1,23 @@
+{
+  "selected_model": "linear_log_target",
+  "test_mae": 589252.3982404614,
+  "test_rmse": 2539535.7544074575,
+  "test_r2": 0.8138248267390229,
+  "features": {
+    "numeric": [
+      "mileage",
+      "engine_capacity",
+      "vehicle_age"
+    ],
+    "categorical": [
+      "fuel_type",
+      "transmission",
+      "assembly",
+      "brand",
+      "model_name"
+    ]
+  },
+  "artifacts": {
+    "model_path": "D:\\ai_project\\artifacts\\car_price_best_model.pkl"
+  }
+}

@@ -16,7 +16,7 @@ import joblib
 import pandas as pd
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent  # d:\ai_project
+BASE_DIR = Path(__file__).resolve().parent  # ml_backend/
 ARTIFACTS_DIR = BASE_DIR / "artifacts"
 
 CAR_MODEL_PATH = ARTIFACTS_DIR / "car_price_best_model.pkl"
@@ -24,8 +24,8 @@ HOUSE_MODEL_PATH = ARTIFACTS_DIR / "house_price_best_model.pkl"
 CAR_METRICS_PATH = ARTIFACTS_DIR / "metrics.json"
 HOUSE_METRICS_PATH = ARTIFACTS_DIR / "house_metrics.json"
 
-CAR_DATA_PATH = BASE_DIR / "pakwheels_pakistan_automobile_dataset.csv"
-HOUSE_DATA_PATH = BASE_DIR / "House_Details.csv"
+CAR_DATA_PATH = BASE_DIR / "data" / "pakwheels_pakistan_automobile_dataset.csv"
+HOUSE_DATA_PATH = BASE_DIR / "data" / "House_Details.csv"
 
 
 def _load_json(path: Path) -> dict[str, Any]:
