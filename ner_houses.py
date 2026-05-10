@@ -5,6 +5,7 @@ import json
 import os
 import re
 import sys
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -150,6 +151,40 @@ MONTH_MAP = {
 	"december": 12,
 }
 
+AREA_UNIT_ALIASES = {
+	"marla": "marla",
+	"kanal": "kanal",
+	"sq ft": "sq ft",
+	"sq feet": "sq ft",
+	"square feet": "sq ft",
+	"sq yd": "sq yd",
+	"sq yard": "sq yd",
+	"sq yards": "sq yd",
+	"square yard": "sq yd",
+	"square yards": "sq yd",
+	"yard": "sq yd",
+	"yards": "sq yd",
+	"ghaz": "sq yd",
+	"gaz": "sq yd",
+	"gaj": "sq yd",
+	"sq m": "sq m",
+	"sq meter": "sq m",
+	"sq meters": "sq m",
+	"square meter": "sq m",
+	"square meters": "sq m",
+	"acre": "acre",
+	"acres": "acre",
+}
+
+AREA_TO_SQFT = {
+	"marla": 272.25,
+	"kanal": 272.25 * 20,
+	"sq ft": 1.0,
+	"sq yd": 9.0,
+	"sq m": 10.7639,
+	"acre": 43560.0,
+}
+
 
 def load_env_file() -> None:
 	if not ENV_FILE.exists():
@@ -193,13 +228,15 @@ def is_signal_line(line: str) -> bool:
 	lower = line.lower()
 	if any(keyword in lower for keyword in SIGNAL_KEYWORDS):
 		return True
-	if re.search(r"\b\d[\d,.]*\s?(?:marla|kanal|sq\s?ft|sq\s?feet|square feet)\b", lower):
+	if re.search(r"\b\d[\d,.]*\s?(?:marla|kanal|sq\s?ft|sq\s?feet|square feet|sq\s?yd|square yards?|sq\s?m|square meters?|acre|acres|ghaz|gaz|gaj)\b", lower):
 		return True
 	if re.search(r"\b\d+\s?(?:beds?|bedrooms?|baths?|bathrooms?)\b", lower):
 		return True
 	if re.search(r"\b(?:pk[r]?\b|crore|lakh)\b", lower):
 		return True
 	if re.search(r"\b(19|20)\d{2}\b", lower):
+		return True
+	if re.search(r"\b\d+\s*(?:minute|hour|day|week|month|year)s?\s+ago\b", lower):
 		return True
 	if re.search(r"\b-?\d{1,2}\.\d{3,6}\b", lower):
 		return True
@@ -310,26 +347,29 @@ def extract_json_block(text: str) -> dict[str, Any]:
 		raise
 
 
-def _parse_total_area(text: str) -> float | None:
+def _parse_area_with_unit(text: str) -> tuple[float, str] | None:
 	match = re.search(
-		r"\b(\d[\d,.]*)\s?(marla|kanal|sq\s?ft|sq\s?feet|square feet)\b",
+		r"\b(\d[\d,.]*)\s?(marla|kanal|sq\s?ft|sq\s?feet|square feet|sq\s?yd|square yards?|sq\s?m|square meters?|acre|acres|ghaz|gaz|gaj)\b",
 		text,
 		flags=re.IGNORECASE,
 	)
 	if not match:
 		return None
 	numeric = match.group(1).replace(",", "")
-	unit = match.group(2).lower()
+	unit_raw = match.group(2).strip().lower()
+	unit = AREA_UNIT_ALIASES.get(unit_raw)
+	if not unit:
+		return None
 	try:
 		value = float(numeric)
 	except ValueError:
 		return None
+	return value, unit
 
-	if unit == "marla":
-		return value * 272.25
-	if unit == "kanal":
-		return value * 20 * 272.25
-	return value
+
+def _convert_area_to_sqft(value: float, unit: str) -> float:
+	factor = AREA_TO_SQFT.get(unit, 1.0)
+	return value * factor
 
 
 def _parse_month(text: str) -> int | None:
@@ -338,6 +378,28 @@ def _parse_month(text: str) -> int | None:
 		if re.search(r"\b" + re.escape(key) + r"\b", lower):
 			return value
 	return None
+
+
+def _parse_relative_added(text: str) -> tuple[int, int] | None:
+	match = re.search(r"\b(\d+)\s*(minute|hour|day|week|month|year)s?\s+ago\b", text, flags=re.IGNORECASE)
+	if not match:
+		return None
+	count = int(match.group(1))
+	unit = match.group(2).lower()
+	now = datetime.now()
+	if unit == "minute":
+		target = now - timedelta(minutes=count)
+	elif unit == "hour":
+		target = now - timedelta(hours=count)
+	elif unit == "day":
+		target = now - timedelta(days=count)
+	elif unit == "week":
+		target = now - timedelta(weeks=count)
+	elif unit == "month":
+		target = now - timedelta(days=30 * count)
+	else:
+		target = now - timedelta(days=365 * count)
+	return target.year, target.month
 
 
 def find_number_near_labels(lines: list[str], label_patterns: tuple[str, ...], value_pattern: str) -> int | None:
@@ -351,6 +413,16 @@ def find_number_near_labels(lines: list[str], label_patterns: tuple[str, ...], v
 			match = re.search(value_pattern, candidate, flags=re.IGNORECASE)
 			if match:
 				return int(match.group(1).replace(",", ""))
+	return None
+
+
+def _parse_area_from_lines(lines: list[str]) -> tuple[float, str] | None:
+	for index, line in enumerate(lines):
+		if re.search(r"\barea\b", line, flags=re.IGNORECASE) and index + 1 < len(lines):
+			next_line = lines[index + 1]
+			parsed = _parse_area_with_unit(next_line)
+			if parsed:
+				return parsed
 	return None
 
 
@@ -390,6 +462,8 @@ def extract_categorical_by_regex(cleaned_text: str) -> dict[str, Any]:
 
 def normalize_output(data: dict[str, Any], cleaned_text: str) -> dict[str, Any]:
 	result: dict[str, Any] = {field: None for field in TARGET_FIELDS}
+	area_value: float | None = None
+	area_unit: str | None = None
 	lines = [normalize_spaces(line) for line in cleaned_text.splitlines() if normalize_spaces(line)]
 
 	for field in TARGET_FIELDS:
@@ -405,19 +479,22 @@ def normalize_output(data: dict[str, Any], cleaned_text: str) -> dict[str, Any]:
 				if numeric_value:
 					value = int(numeric_value)
 			if field == "Total_Area":
-				parsed = _parse_total_area(value)
-				value = parsed if parsed is not None else value
+				parsed = _parse_area_with_unit(value)
+				if parsed:
+					area_value, area_unit = parsed
+					value = _convert_area_to_sqft(area_value, area_unit)
 		elif field == "Total_Area" and isinstance(value, (int, float)):
-			if re.search(r"\bmarla\b", cleaned_text, flags=re.IGNORECASE):
-				value = float(value) * 272.25
-			elif re.search(r"\bkanal\b", cleaned_text, flags=re.IGNORECASE):
-				value = float(value) * 20 * 272.25
+			parsed = _parse_area_with_unit(cleaned_text)
+			if parsed:
+				area_value, area_unit = parsed
+				value = _convert_area_to_sqft(area_value, area_unit)
 		result[field] = value
 
 	if result["Total_Area"] is None:
-		area = _parse_total_area(cleaned_text)
-		if area is not None:
-			result["Total_Area"] = area
+		parsed = _parse_area_with_unit(cleaned_text) or _parse_area_from_lines(lines)
+		if parsed:
+			area_value, area_unit = parsed
+			result["Total_Area"] = _convert_area_to_sqft(area_value, area_unit)
 
 	if result["bedrooms"] is None:
 		bedrooms = find_number_near_labels(
@@ -439,8 +516,9 @@ def normalize_output(data: dict[str, Any], cleaned_text: str) -> dict[str, Any]:
 
 	# Date parsing from lines like "Added May 10, 2024"
 	if result["listing_year"] is None or result["listing_month"] is None:
-		for line in lines:
-			if "added" not in line.lower():
+		for index, line in enumerate(lines):
+			lower = line.lower()
+			if "added" not in lower and "ago" not in lower:
 				continue
 			year_match = re.search(r"\b(19|20)\d{2}\b", line)
 			if year_match and result["listing_year"] is None:
@@ -449,6 +527,14 @@ def normalize_output(data: dict[str, Any], cleaned_text: str) -> dict[str, Any]:
 				month_val = _parse_month(line)
 				if month_val:
 					result["listing_month"] = month_val
+			if result["listing_year"] is None or result["listing_month"] is None:
+				relative = _parse_relative_added(line)
+				if not relative and "added" in lower and index + 1 < len(lines):
+					relative = _parse_relative_added(lines[index + 1])
+				if relative:
+					rel_year, rel_month = relative
+					result["listing_year"] = result["listing_year"] or rel_year
+					result["listing_month"] = result["listing_month"] or rel_month
 
 	for field in ("property_type", "location", "city", "province_name", "purpose"):
 		value = result[field]
@@ -459,6 +545,11 @@ def normalize_output(data: dict[str, Any], cleaned_text: str) -> dict[str, Any]:
 	for field in ("property_type", "location", "city", "province_name", "purpose"):
 		if result.get(field) is None and fallbacks.get(field):
 			result[field] = fallbacks[field]
+
+	if area_value is not None:
+		result["area_value"] = area_value
+	if area_unit is not None:
+		result["area_unit"] = area_unit
 
 	return result
 

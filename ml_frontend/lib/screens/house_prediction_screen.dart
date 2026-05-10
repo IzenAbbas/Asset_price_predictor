@@ -37,6 +37,7 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
   String? _city;
   String? _province;
   String? _purpose;
+  String _areaUnit = 'sq ft';
 
   // State
   bool _isLoading = false;
@@ -62,6 +63,7 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
     _city = house['cities']?.firstOrNull;
     _province = house['provinces']?.firstOrNull;
     _purpose = house['purposes']?.firstOrNull;
+    _areaUnit = 'sq ft';
   }
 
   @override
@@ -91,7 +93,7 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
 
     try {
       final input = HousePredictionInput(
-        totalArea: double.parse(_areaCtrl.text),
+        totalArea: _convertToSqFt(double.parse(_areaCtrl.text), _areaUnit),
         bedrooms: int.parse(_bedroomsCtrl.text),
         baths: int.parse(_bathsCtrl.text),
         latitude: double.parse(_latCtrl.text),
@@ -141,7 +143,14 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
         _isExtracting = false;
         _extractionError = null;
 
-        if (extracted.totalArea != null) {
+        if (extracted.areaUnit != null && extracted.areaValue != null) {
+          _areaUnit = extracted.areaUnit!;
+          final area = extracted.areaValue!;
+          _areaCtrl.text = area % 1 == 0
+              ? area.toStringAsFixed(0)
+              : area.toStringAsFixed(2);
+        } else if (extracted.totalArea != null) {
+          _areaUnit = 'sq ft';
           final area = extracted.totalArea!;
           _areaCtrl.text = area % 1 == 0
               ? area.toStringAsFixed(0)
@@ -375,7 +384,15 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
                 children: [
                   _sectionTitle('Property Details'),
                   const SizedBox(height: 16),
-                  _numField(_areaCtrl, 'Total Area (sq ft)', 'e.g. 1089'),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _numField(_areaCtrl, 'Total Area', 'e.g. 7'),
+                      ),
+                      const SizedBox(width: 12),
+                      SizedBox(width: 130, child: _areaUnitDropdown()),
+                    ],
+                  ),
                   const SizedBox(height: 14),
                   Row(
                     children: [
@@ -412,18 +429,6 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
                 children: [
                   _sectionTitle('Geography'),
                   const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _numField(_latCtrl, 'Latitude', 'e.g. 33.68'),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _numField(_lngCtrl, 'Longitude', 'e.g. 73.05'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
                   _dropdown(
                     'City',
                     house['cities'] ?? [],
@@ -516,6 +521,23 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
     );
   }
 
+  double _convertToSqFt(double value, String unit) {
+    switch (unit) {
+      case 'marla':
+        return value * 272.25;
+      case 'kanal':
+        return value * 20 * 272.25;
+      case 'sq yd':
+        return value * 9;
+      case 'sq m':
+        return value * 10.7639;
+      case 'acre':
+        return value * 43560;
+      default:
+        return value;
+    }
+  }
+
   Widget _numField(
     TextEditingController ctrl,
     String label,
@@ -561,6 +583,20 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
           .toList(),
       onChanged: onChanged,
       validator: (v) => v == null ? 'Please select' : null,
+    );
+  }
+
+  Widget _areaUnitDropdown() {
+    const units = ['sq ft', 'marla', 'kanal', 'sq yd', 'sq m', 'acre'];
+    return DropdownButtonFormField<String>(
+      value: units.contains(_areaUnit) ? _areaUnit : 'sq ft',
+      isExpanded: true,
+      dropdownColor: Theme.of(context).colorScheme.surface,
+      decoration: const InputDecoration(labelText: 'Unit'),
+      items: units
+          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+          .toList(),
+      onChanged: (v) => setState(() => _areaUnit = v ?? 'sq ft'),
     );
   }
 

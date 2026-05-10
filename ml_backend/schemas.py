@@ -51,6 +51,8 @@ class VehicleFieldsOutput(BaseModel):
 class HouseFieldsOutput(BaseModel):
     """Extracted house fields from a Zameen listing URL using NER."""
     Total_Area: float | None = Field(None, description="Extracted total area")
+    area_value: float | None = Field(None, description="Original area value in extracted unit")
+    area_unit: str | None = Field(None, description="Original area unit")
     bedrooms: int | None = Field(None, description="Extracted bedroom count")
     baths: int | None = Field(None, description="Extracted bathroom count")
     latitude: float | None = Field(None, description="Extracted latitude")

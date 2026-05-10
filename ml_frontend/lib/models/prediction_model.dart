@@ -97,6 +97,8 @@ class VehicleFieldsOutput {
 
 class HouseFieldsOutput {
   final double? totalArea;
+  final double? areaValue;
+  final String? areaUnit;
   final int? bedrooms;
   final int? baths;
   final double? latitude;
@@ -111,6 +113,8 @@ class HouseFieldsOutput {
 
   HouseFieldsOutput({
     this.totalArea,
+    this.areaValue,
+    this.areaUnit,
     this.bedrooms,
     this.baths,
     this.latitude,
@@ -127,6 +131,8 @@ class HouseFieldsOutput {
   factory HouseFieldsOutput.fromJson(Map<String, dynamic> json) {
     return HouseFieldsOutput(
       totalArea: (json['Total_Area'] as num?)?.toDouble(),
+      areaValue: (json['area_value'] as num?)?.toDouble(),
+      areaUnit: json['area_unit'] as String?,
       bedrooms: json['bedrooms'] as int?,
       baths: json['baths'] as int?,
       latitude: (json['latitude'] as num?)?.toDouble(),
