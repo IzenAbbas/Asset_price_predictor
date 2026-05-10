@@ -93,6 +93,55 @@ class VehicleFieldsOutput {
   }
 }
 
+// ── House Field Extraction (NER) ──────────────────────────────────
+
+class HouseFieldsOutput {
+  final double? totalArea;
+  final int? bedrooms;
+  final int? baths;
+  final double? latitude;
+  final double? longitude;
+  final int? listingYear;
+  final int? listingMonth;
+  final String? propertyType;
+  final String? location;
+  final String? city;
+  final String? provinceName;
+  final String? purpose;
+
+  HouseFieldsOutput({
+    this.totalArea,
+    this.bedrooms,
+    this.baths,
+    this.latitude,
+    this.longitude,
+    this.listingYear,
+    this.listingMonth,
+    this.propertyType,
+    this.location,
+    this.city,
+    this.provinceName,
+    this.purpose,
+  });
+
+  factory HouseFieldsOutput.fromJson(Map<String, dynamic> json) {
+    return HouseFieldsOutput(
+      totalArea: (json['Total_Area'] as num?)?.toDouble(),
+      bedrooms: json['bedrooms'] as int?,
+      baths: json['baths'] as int?,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
+      listingYear: json['listing_year'] as int?,
+      listingMonth: json['listing_month'] as int?,
+      propertyType: json['property_type'] as String?,
+      location: json['location'] as String?,
+      city: json['city'] as String?,
+      provinceName: json['province_name'] as String?,
+      purpose: json['purpose'] as String?,
+    );
+  }
+}
+
 // ── House Prediction ────────────────────────────────────────────────
 
 class HousePredictionInput {
@@ -164,13 +213,17 @@ class DropdownOptions {
   final Map<String, List<String>> house;
   final Map<String, List<String>> carBrandModels;
 
-  DropdownOptions({required this.car, required this.house, required this.carBrandModels});
+  DropdownOptions({
+    required this.car,
+    required this.house,
+    required this.carBrandModels,
+  });
 
   factory DropdownOptions.fromJson(Map<String, dynamic> json) {
     return DropdownOptions(
       car: _parseOptionMap(json['car'] as Map<String, dynamic>),
       house: _parseOptionMap(json['house'] as Map<String, dynamic>),
-      carBrandModels: json.containsKey('car_brand_models') 
+      carBrandModels: json.containsKey('car_brand_models')
           ? _parseOptionMap(json['car_brand_models'] as Map<String, dynamic>)
           : {},
     );

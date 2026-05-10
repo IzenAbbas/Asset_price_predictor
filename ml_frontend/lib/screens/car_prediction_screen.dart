@@ -154,7 +154,7 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('✅ Vehicle details extracted and populated!'),
+          content: Text('Vehicle details extracted and populated!'),
           duration: Duration(seconds: 2),
         ),
       );
@@ -285,8 +285,7 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
                     controller: _urlCtrl,
                     decoration: InputDecoration(
                       labelText: 'Listing URL',
-                      hintText:
-                          'e.g. https://www.pakwheels.com/... or https://www.olx.com.pk/...',
+                      hintText: 'e.g. https://www.pakwheels.com/... ',
                       hintStyle: const TextStyle(fontSize: 12),
                     ),
                     validator: (v) {

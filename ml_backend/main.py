@@ -22,6 +22,7 @@ from schemas import (
     HealthResponse,
     HousePredictionInput,
     HousePredictionOutput,
+    HouseFieldsOutput,
     VehicleFieldsOutput,
 )
 from predictor import predictor
@@ -34,6 +35,14 @@ try:
     from ner_cars import extract_vehicle_fields
 except ImportError:
     extract_vehicle_fields = None
+
+try:
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from ner_houses import extract_house_fields
+except ImportError:
+    extract_house_fields = None
 
 app = FastAPI(
     title="Asset Price Prediction API",
@@ -110,6 +119,11 @@ class VehicleURLInput(BaseModel):
     url: str
 
 
+class HouseURLInput(BaseModel):
+    """Request body for house field extraction from URL."""
+    url: str
+
+
 @app.post("/extract/vehicle-fields", response_model=VehicleFieldsOutput, tags=["extraction"])
 def extract_vehicle_fields_endpoint(input_data: VehicleURLInput):
     """Extract vehicle fields (NER) from a PakWheels listing URL.
@@ -137,6 +151,37 @@ def extract_vehicle_fields_endpoint(input_data: VehicleURLInput):
         result = extract_vehicle_fields(input_data.url)
         return VehicleFieldsOutput(**result)
     
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Extraction failed: {str(e)}")
+
+
+@app.post("/extract/house-fields", response_model=HouseFieldsOutput, tags=["extraction"])
+def extract_house_fields_endpoint(input_data: HouseURLInput):
+    """Extract house fields (NER) from a Zameen listing URL.
+    
+    Supported domains:
+      - Zameen: https://www.zameen.com/...
+    """
+    if not extract_house_fields:
+        raise HTTPException(
+            status_code=503,
+            detail="NER extraction not available. Missing ner_houses module or dependencies."
+        )
+
+    try:
+        lower_url = input_data.url.lower()
+        if "zameen.com" not in lower_url:
+            raise HTTPException(
+                status_code=400,
+                detail="Unsupported URL domain. Only Zameen is supported. "
+                       "Example: https://www.zameen.com/..."
+            )
+
+        result = extract_house_fields(input_data.url)
+        return HouseFieldsOutput(**result)
+
     except HTTPException:
         raise
     except Exception as e:

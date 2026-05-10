@@ -46,6 +46,24 @@ class VehicleFieldsOutput(BaseModel):
     model_name: str | None = Field(None, description="Extracted model name (lowercase)")
 
 
+# ── House Field Extraction (NER from URL) ───────────────────────────
+
+class HouseFieldsOutput(BaseModel):
+    """Extracted house fields from a Zameen listing URL using NER."""
+    Total_Area: float | None = Field(None, description="Extracted total area")
+    bedrooms: int | None = Field(None, description="Extracted bedroom count")
+    baths: int | None = Field(None, description="Extracted bathroom count")
+    latitude: float | None = Field(None, description="Extracted latitude")
+    longitude: float | None = Field(None, description="Extracted longitude")
+    listing_year: int | None = Field(None, description="Extracted listing year")
+    listing_month: int | None = Field(None, description="Extracted listing month")
+    property_type: str | None = Field(None, description="Extracted property type (lowercase)")
+    location: str | None = Field(None, description="Extracted location (lowercase)")
+    city: str | None = Field(None, description="Extracted city (lowercase)")
+    province_name: str | None = Field(None, description="Extracted province (lowercase)")
+    purpose: str | None = Field(None, description="Extracted purpose (lowercase)")
+
+
 # ── House Price Prediction ────────────────────────────────────────────
 
 class HousePredictionInput(BaseModel):

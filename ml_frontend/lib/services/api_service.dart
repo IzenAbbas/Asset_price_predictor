@@ -116,4 +116,29 @@ class ApiService {
       throw Exception('$e');
     }
   }
+
+  // ─── House Field Extraction (NER from URL) ───────────────────────
+
+  Future<HouseFieldsOutput> extractHouseFields(String url) async {
+    final apiUrl = Uri.parse('$baseUrl/extract/house-fields');
+    try {
+      final response = await http
+          .post(
+            apiUrl,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'url': url}),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        return HouseFieldsOutput.fromJson(jsonDecode(response.body));
+      } else {
+        final body = jsonDecode(response.body);
+        final detail = body['detail'] ?? response.body;
+        throw Exception(detail);
+      }
+    } catch (e) {
+      throw Exception('$e');
+    }
+  }
 }
