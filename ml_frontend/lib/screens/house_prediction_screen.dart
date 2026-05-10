@@ -3,7 +3,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../models/prediction_model.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
@@ -114,7 +113,11 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
       _animCtrl.forward();
     } catch (e) {
       setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
+        _error = ApiService.userMessageFromError(
+          e,
+          fallback:
+              'We could not generate a house price right now. Please try again.',
+        );
         _isLoading = false;
       });
     }
@@ -209,10 +212,13 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
         ),
       );
     } catch (e) {
-      final errorMsg = e.toString().replaceFirst('Exception: ', '');
       setState(() {
         _isExtracting = false;
-        _extractionError = errorMsg;
+        _extractionError = ApiService.userMessageFromError(
+          e,
+          fallback:
+              'We could not read details from that listing. You can fill the form manually.',
+        );
       });
     }
   }
@@ -220,9 +226,11 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
   @override
   Widget build(BuildContext context) {
     final house = widget.options.house;
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Form(
         key: _formKey,
         child: Column(
@@ -232,36 +240,32 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
-                    gradient: AppGradients.accent,
-                    borderRadius: BorderRadius.circular(14),
+                    color: scheme.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.home_rounded,
-                    color: Colors.white,
-                    size: 28,
+                    color: scheme.primary,
+                    size: 22,
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'House Price Predictor',
-                      style: GoogleFonts.inter(
-                        fontSize: 22,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? AppColors.textPrimaryDark
-                            : AppColors.textPrimaryLight,
                       ),
                     ),
                     Text(
                       'Estimate property value in Pakistan',
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: Theme.of(context).brightness == Brightness.dark
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: isDark
                             ? AppColors.textSecondaryDark
                             : AppColors.textSecondaryLight,
                       ),
@@ -270,7 +274,7 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
             // ── URL Extraction Card ──
             GlassCard(
@@ -281,16 +285,15 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
                     children: [
                       const Icon(
                         Icons.link_rounded,
-                        color: AppColors.accent,
+                        color: AppColors.primary,
                         size: 18,
                       ),
                       const SizedBox(width: 8),
                       Text(
                         'Auto-fill from Zameen',
-                        style: GoogleFonts.inter(
-                          fontSize: 15,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: AppColors.accent,
+                          color: AppColors.primary,
                         ),
                       ),
                     ],
@@ -312,7 +315,7 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton.icon(
+                    child: OutlinedButton.icon(
                       onPressed: _isExtracting ? null : _extractHouseFields,
                       icon: _isExtracting
                           ? const SizedBox(
@@ -328,15 +331,13 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
                           : const Icon(Icons.auto_fix_high),
                       label: Text(
                         _isExtracting ? 'Extracting...' : 'Extract Details',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
                       ),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        backgroundColor: AppColors.accent.withValues(
-                          alpha: 0.1,
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        foregroundColor: AppColors.primary,
+                        side: BorderSide(
+                          color: AppColors.primary.withValues(alpha: 0.45),
                         ),
-                        foregroundColor: AppColors.accent,
-                        side: const BorderSide(color: AppColors.accent),
                       ),
                     ),
                   ),
@@ -345,10 +346,10 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.error.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(8),
+                        color: AppColors.error.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AppColors.error.withValues(alpha: 0.4),
+                          color: AppColors.error.withValues(alpha: 0.18),
                         ),
                       ),
                       child: Row(
@@ -362,10 +363,8 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
                           Expanded(
                             child: Text(
                               _extractionError!,
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: AppColors.error,
-                              ),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: AppColors.error),
                             ),
                           ),
                         ],
@@ -513,10 +512,9 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
   Widget _sectionTitle(String title) {
     return Text(
       title,
-      style: GoogleFonts.inter(
-        fontSize: 15,
+      style: Theme.of(context).textTheme.titleSmall?.copyWith(
         fontWeight: FontWeight.w600,
-        color: AppColors.accent,
+        color: Theme.of(context).colorScheme.primary,
       ),
     );
   }
@@ -601,94 +599,77 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
   }
 
   Widget _predictButton() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: AppGradients.accent,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accent.withValues(alpha: 0.4),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: ElevatedButton(
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
         onPressed: _isLoading ? null : _predict,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          padding: const EdgeInsets.symmetric(vertical: 18),
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
         ),
-        child: _isLoading
+        icon: _isLoading
             ? const SizedBox(
-                height: 22,
-                width: 22,
+                height: 18,
+                width: 18,
                 child: CircularProgressIndicator(
                   color: Colors.white,
-                  strokeWidth: 2.5,
+                  strokeWidth: 2.2,
                 ),
               )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.auto_awesome, size: 20),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Predict House Price',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
+            : const Icon(Icons.auto_awesome, size: 20),
+        label: Text(_isLoading ? 'Predicting...' : 'Predict House Price'),
       ),
     );
   }
 
   Widget _resultCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return FadeTransition(
       opacity: _fadeAnim,
       child: Container(
         decoration: BoxDecoration(
-          gradient: AppGradients.success,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppColors.success.withValues(alpha: 0.3),
-              blurRadius: 20,
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+              blurRadius: 18,
               offset: const Offset(0, 8),
             ),
           ],
+          border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.borderLightTheme,
+          ),
         ),
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            const Icon(
+            Icon(
               Icons.check_circle_rounded,
-              color: Colors.white,
-              size: 48,
+              color: Theme.of(context).colorScheme.primary,
+              size: 42,
             ),
             const SizedBox(height: 12),
             Text(
               'Predicted Price',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Colors.white70,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight,
               ),
             ),
             const SizedBox(height: 6),
             Text(
               _result!.formattedPrice,
-              style: GoogleFonts.inter(
-                fontSize: 32,
+              style: Theme.of(context).textTheme.displaySmall?.copyWith(
                 fontWeight: FontWeight.w800,
-                color: Colors.white,
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimaryLight,
               ),
             ),
           ],
@@ -700,19 +681,25 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
   Widget _errorCard() {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha: 0.12),
+        color: AppColors.error.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.18)),
       ),
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, color: AppColors.error, size: 24),
+          const Icon(
+            Icons.info_outline_rounded,
+            color: AppColors.error,
+            size: 24,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               _error!,
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.error),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.error),
             ),
           ),
         ],

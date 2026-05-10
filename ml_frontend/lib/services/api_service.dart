@@ -26,6 +26,37 @@ class ApiService {
     return 'http://127.0.0.1:8000';
   }
 
+  static String userMessageFromError(Object error, {required String fallback}) {
+    final raw = error.toString().replaceFirst('Exception: ', '').trim();
+    if (raw.isEmpty) return fallback;
+
+    final lower = raw.toLowerCase();
+    if (lower.contains('socketexception') ||
+        lower.contains('failed host lookup') ||
+        lower.contains('connection refused') ||
+        lower.contains('cannot connect') ||
+        lower.contains('network is unreachable')) {
+      return 'We could not reach the server. Please make sure the backend is running and try again.';
+    }
+
+    if (lower.contains('timed out')) {
+      return 'The request took too long. Please try again.';
+    }
+
+    if (lower.contains('404') ||
+        lower.contains('500') ||
+        lower.contains('502') ||
+        lower.contains('503')) {
+      return 'The service is temporarily unavailable. Please try again in a moment.';
+    }
+
+    if (lower.contains('validation') || lower.contains('invalid')) {
+      return 'Some details need to be corrected before continuing.';
+    }
+
+    return raw;
+  }
+
   // ─── Dropdown Options ──────────────────────────────────────────────
 
   Future<DropdownOptions> getDropdownOptions() async {
@@ -35,10 +66,18 @@ class ApiService {
       if (response.statusCode == 200) {
         return DropdownOptions.fromJson(jsonDecode(response.body));
       } else {
-        throw Exception('Failed to load options: ${response.statusCode}');
+        throw Exception(
+          'We could not load the app data. Please try again in a moment.',
+        );
       }
     } catch (e) {
-      throw Exception('Cannot connect to API: $e');
+      throw Exception(
+        userMessageFromError(
+          e,
+          fallback:
+              'We could not load the app data. Please check your connection and try again.',
+        ),
+      );
     }
   }
 
@@ -58,11 +97,18 @@ class ApiService {
       if (response.statusCode == 200) {
         return CarPredictionOutput.fromJson(jsonDecode(response.body));
       } else {
-        final detail = jsonDecode(response.body)['detail'] ?? response.body;
-        throw Exception('Prediction failed: $detail');
+        throw Exception(
+          'We could not generate a car price right now. Please review the details and try again.',
+        );
       }
     } catch (e) {
-      throw Exception('Car prediction error: $e');
+      throw Exception(
+        userMessageFromError(
+          e,
+          fallback:
+              'We could not generate a car price right now. Please try again.',
+        ),
+      );
     }
   }
 
@@ -84,11 +130,18 @@ class ApiService {
       if (response.statusCode == 200) {
         return HousePredictionOutput.fromJson(jsonDecode(response.body));
       } else {
-        final detail = jsonDecode(response.body)['detail'] ?? response.body;
-        throw Exception('Prediction failed: $detail');
+        throw Exception(
+          'We could not generate a house price right now. Please review the details and try again.',
+        );
       }
     } catch (e) {
-      throw Exception('House prediction error: $e');
+      throw Exception(
+        userMessageFromError(
+          e,
+          fallback:
+              'We could not generate a house price right now. Please try again.',
+        ),
+      );
     }
   }
 
@@ -108,12 +161,18 @@ class ApiService {
       if (response.statusCode == 200) {
         return VehicleFieldsOutput.fromJson(jsonDecode(response.body));
       } else {
-        final body = jsonDecode(response.body);
-        final detail = body['detail'] ?? response.body;
-        throw Exception(detail);
+        throw Exception(
+          'We could not read details from that listing. You can fill the form manually.',
+        );
       }
     } catch (e) {
-      throw Exception('$e');
+      throw Exception(
+        userMessageFromError(
+          e,
+          fallback:
+              'We could not read details from that listing. You can fill the form manually.',
+        ),
+      );
     }
   }
 
@@ -133,12 +192,18 @@ class ApiService {
       if (response.statusCode == 200) {
         return HouseFieldsOutput.fromJson(jsonDecode(response.body));
       } else {
-        final body = jsonDecode(response.body);
-        final detail = body['detail'] ?? response.body;
-        throw Exception(detail);
+        throw Exception(
+          'We could not read details from that listing. You can fill the form manually.',
+        );
       }
     } catch (e) {
-      throw Exception('$e');
+      throw Exception(
+        userMessageFromError(
+          e,
+          fallback:
+              'We could not read details from that listing. You can fill the form manually.',
+        ),
+      );
     }
   }
 }

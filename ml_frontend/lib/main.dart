@@ -92,19 +92,27 @@ class _AppShellState extends State<AppShell> {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ShaderMask(
-              shaderCallback: (bounds) =>
-                  AppGradients.primary.createShader(bounds),
-              child: const Icon(
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
                 Icons.analytics_rounded,
-                color: Colors.white,
-                size: 26,
+                size: 19,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
             const SizedBox(width: 10),
-            const GradientText(
+            Text(
               'Asset Advisor',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -143,10 +151,18 @@ class _AppShellState extends State<AppShell> {
                 return Container(
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surface,
-                    border: Border(top: BorderSide(color: isDark ? AppColors.borderDark : AppColors.borderLightTheme)),
+                    border: Border(
+                      top: BorderSide(
+                        color: isDark
+                            ? AppColors.borderDark
+                            : AppColors.borderLightTheme,
+                      ),
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: isDark ? Colors.black.withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.05),
+                        color: isDark
+                            ? Colors.black.withValues(alpha: 0.3)
+                            : Colors.black.withValues(alpha: 0.05),
                         blurRadius: 16,
                         offset: const Offset(0, -4),
                       ),
@@ -154,25 +170,34 @@ class _AppShellState extends State<AppShell> {
                   ),
                   child: NavigationBar(
                     backgroundColor: Colors.transparent,
-                    indicatorColor: isDark ? AppColors.primary.withValues(alpha: 0.2) : AppColors.primary.withValues(alpha: 0.1),
+                    indicatorColor: isDark
+                        ? AppColors.primary.withValues(alpha: 0.2)
+                        : AppColors.primary.withValues(alpha: 0.1),
                     selectedIndex: _currentTab,
-                    onDestinationSelected: (i) => setState(() => _currentTab = i),
+                    onDestinationSelected: (i) =>
+                        setState(() => _currentTab = i),
                     destinations: [
                       NavigationDestination(
                         icon: Icon(
                           Icons.directions_car_outlined,
-                          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondaryLight,
                         ),
                         selectedIcon: Icon(
                           Icons.directions_car_rounded,
-                          color: isDark ? AppColors.primaryLight : AppColors.primary,
+                          color: isDark
+                              ? AppColors.primaryLight
+                              : AppColors.primary,
                         ),
                         label: 'Car',
                       ),
                       NavigationDestination(
                         icon: Icon(
                           Icons.home_outlined,
-                          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondaryLight,
                         ),
                         selectedIcon: Icon(
                           Icons.home_rounded,
@@ -183,7 +208,7 @@ class _AppShellState extends State<AppShell> {
                     ],
                   ),
                 );
-              }
+              },
             )
           : null,
     );
@@ -202,7 +227,9 @@ class _AppShellState extends State<AppShell> {
               'Connecting to prediction server...',
               style: GoogleFonts.inter(
                 fontSize: 14,
-                color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight,
               ),
             ),
           ],
@@ -219,31 +246,30 @@ class _AppShellState extends State<AppShell> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.cloud_off_rounded,
-                  color: AppColors.error,
-                  size: 56,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 48,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 Text(
-                  'Connection Error',
-                  style: GoogleFonts.inter(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: Theme.of(context).brightness == Brightness.dark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                  ),
+                  'Couldn\'t load data',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   _error!,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    color: Theme.of(context).brightness == Brightness.dark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight,
                   ),
                 ),
                 const SizedBox(height: 20),
-                ElevatedButton.icon(
+                FilledButton.icon(
                   onPressed: () {
                     setState(() {
                       _loading = true;
@@ -251,8 +277,8 @@ class _AppShellState extends State<AppShell> {
                     });
                     _loadOptions();
                   },
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Retry'),
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Try again'),
                 ),
               ],
             ),
