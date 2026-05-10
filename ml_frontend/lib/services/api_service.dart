@@ -10,11 +10,12 @@ import '../models/prediction_model.dart';
 
 class ApiService {
   // ─── Base URL Configuration ────────────────────────────────────────
-  // To deploy: Replace with your Render URL (e.g., https://your-app.onrender.com)
-  static const String _productionUrl = 'YOUR_RENDER_URL';
+  // Production URL for Render backend
+  static const String _productionUrl =
+      'https://asset-price-predictor-api.onrender.com';
 
   static String get baseUrl {
-    if (kReleaseMode && _productionUrl != 'YOUR_RENDER_URL') {
+    if (kReleaseMode) {
       return _productionUrl;
     }
 
