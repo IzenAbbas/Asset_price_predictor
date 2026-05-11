@@ -11,7 +11,7 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OrdinalEncoder, RobustScaler
+from sklearn.preprocessing import OrdinalEncoder, RobustScaler, TargetEncoder
 
 RANDOM_STATE = 42
 DATASET_PATH = Path("pakwheels_pakistan_automobile_dataset.csv")
@@ -83,6 +83,9 @@ print(f"Rows used for training: {len(car):,}")
 
 
 def build_gradient_boosting_model() -> Pipeline:
+    low_card_features = ["fuel_type", "transmission", "assembly", "brand"]
+    high_card_features = ["model_name"]
+    
     preprocessor = ColumnTransformer(
         transformers=[
             (
@@ -96,17 +99,31 @@ def build_gradient_boosting_model() -> Pipeline:
                 NUMERIC_FEATURES,
             ),
             (
-                "cat",
+                "cat_low",
                 Pipeline(
                     steps=[
                         ("imputer", SimpleImputer(strategy="most_frequent")),
                         ("ordinal", OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1)),
                     ]
                 ),
-                CATEGORICAL_FEATURES,
+                low_card_features,
+            ),
+            (
+                "cat_high",
+                Pipeline(
+                    steps=[
+                        ("imputer", SimpleImputer(strategy="most_frequent")),
+                        ("target", TargetEncoder()),
+                    ]
+                ),
+                high_card_features,
             ),
         ]
     )
+
+    num_numeric = len(NUMERIC_FEATURES)
+    num_low_card = len(low_card_features)
+    categorical_indices = list(range(num_numeric, num_numeric + num_low_card))
 
     return Pipeline(
         steps=[
@@ -115,7 +132,10 @@ def build_gradient_boosting_model() -> Pipeline:
                 "regressor",
                 TransformedTargetRegressor(
                     regressor=HistGradientBoostingRegressor(
-                        random_state=RANDOM_STATE
+                        random_state=RANDOM_STATE,
+                        max_iter=500,
+                        learning_rate=0.05,
+                        categorical_features=categorical_indices
                     ),
                     func=np.log1p,
                     inverse_func=np.expm1,

@@ -10,14 +10,14 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OrdinalEncoder, RobustScaler
+from sklearn.preprocessing import OrdinalEncoder, RobustScaler, TargetEncoder
 
 RANDOM_STATE = 42
 DATASET_PATH = Path("House_Details.csv")
 ARTIFACTS_DIR = Path("artifacts")
 
-NUMERIC_FEATURES = ["Total_Area", "bedrooms", "baths", "latitude", "longitude", "listing_year", "listing_month"]
-CATEGORICAL_FEATURES = ["property_type", "location", "city", "province_name", "purpose"]
+NUMERIC_FEATURES = ["Total_Area", "bedrooms", "baths", "listing_year", "listing_month", "latitude", "longitude"]
+CATEGORICAL_FEATURES = ["property_type", "location", "city", "province_name"]
 TARGET = "price"
 
 
@@ -82,6 +82,9 @@ print(f"Rows used for training: {len(house):,}")
 
 
 def build_gradient_boosting_model() -> Pipeline:
+    low_card_features = ["property_type", "city", "province_name"]
+    high_card_features = ["location"]
+    
     preprocessor = ColumnTransformer(
         transformers=[
             (
@@ -95,17 +98,31 @@ def build_gradient_boosting_model() -> Pipeline:
                 NUMERIC_FEATURES,
             ),
             (
-                "cat",
+                "cat_low",
                 Pipeline(
                     steps=[
                         ("imputer", SimpleImputer(strategy="most_frequent")),
                         ("ordinal", OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1)),
                     ]
                 ),
-                CATEGORICAL_FEATURES,
+                low_card_features,
+            ),
+            (
+                "cat_high",
+                Pipeline(
+                    steps=[
+                        ("imputer", SimpleImputer(strategy="most_frequent")),
+                        ("target", TargetEncoder()),
+                    ]
+                ),
+                high_card_features,
             ),
         ]
     )
+
+    num_numeric = len(NUMERIC_FEATURES)
+    num_low_card = len(low_card_features)
+    categorical_indices = list(range(num_numeric, num_numeric + num_low_card))
 
     return Pipeline(
         steps=[
@@ -114,7 +131,11 @@ def build_gradient_boosting_model() -> Pipeline:
                 "regressor",
                 TransformedTargetRegressor(
                     regressor=HistGradientBoostingRegressor(
-                        random_state=RANDOM_STATE
+                        random_state=RANDOM_STATE,
+                        max_iter=1000,
+                        learning_rate=0.05,
+                        max_leaf_nodes=127,
+                        categorical_features=categorical_indices
                     ),
                     func=np.log1p,
                     inverse_func=np.expm1,
@@ -200,42 +221,67 @@ try:
         reg = final_estimator.regressor_
         if hasattr(reg, 'coef_'):
             coefs = reg.coef_
+            # include all features in the plotted feature importance (do not exclude city/province)
+            feature_names = list(all_features)
+            # assume coef_ order matches all_features
+            filtered_coefs = [coefs[i] for i in range(len(feature_names))]
             plt.figure(figsize=(10, 6))
-            plt.bar(range(len(coefs)), coefs)
+            plt.bar(range(len(filtered_coefs)), filtered_coefs)
+            plt.xticks(range(len(filtered_coefs)), feature_names, rotation=45)
             plt.title('Feature Coefficients')
             graph_feature_importance = plot_to_base64()
         else:
-            print("Calculating permutation importance (this may take a moment)...")
-            result = permutation_importance(
-                selected_model, X_test.iloc[:1000], y_test.iloc[:1000], 
-                n_repeats=3, random_state=RANDOM_STATE, n_jobs=-1
-            )
-            importances = result.importances_mean
-            plt.figure(figsize=(10, 6))
-            plt.bar(range(len(importances)), importances)
-            plt.xticks(range(len(importances)), all_features, rotation=45)
-            plt.title('Feature Importance (Permutation)')
-            graph_feature_importance = plot_to_base64()
+            try:
+                print("Calculating permutation importance (this may take a moment)...")
+                sample_n = min(500, len(X_test))
+                sample_X = X_test.sample(n=sample_n, random_state=RANDOM_STATE)
+                sample_y = y_test.loc[sample_X.index]
+                result = permutation_importance(
+                    selected_model, sample_X, sample_y,
+                    n_repeats=3, random_state=RANDOM_STATE, n_jobs=1
+                )
+                importances = result.importances_mean
+                # include all features in the plotted importances
+                feature_names = list(all_features)
+                filtered_importances = [importances[i] for i in range(len(feature_names))]
+                plt.figure(figsize=(10, 6))
+                plt.bar(range(len(filtered_importances)), filtered_importances)
+                plt.xticks(range(len(filtered_importances)), feature_names, rotation=45)
+                plt.title('Feature Importance (Permutation)')
+                graph_feature_importance = plot_to_base64()
+            except KeyboardInterrupt:
+                print("Permutation importance interrupted by user; skipping.")
+            except Exception as e:
+                print(f"Error calculating permutation importance: {e}")
 except Exception as e:
     print(f"Error calculating feature importance: {e}")
 
 from sklearn.model_selection import learning_curve
 
 print("Generating learning curves...")
-train_sizes, train_scores, test_scores = learning_curve(
-    selected_model, X, y, cv=3, scoring='neg_mean_squared_error',
-    train_sizes=np.linspace(0.1, 1.0, 5), n_jobs=-1
-)
-train_scores_mean = -np.mean(train_scores, axis=1)
-test_scores_mean = -np.mean(test_scores, axis=1)
+try:
+    train_sizes, train_scores, test_scores = learning_curve(
+        selected_model, X, y, cv=3, scoring='neg_mean_squared_error',
+        train_sizes=np.linspace(0.2, 1.0, 4), n_jobs=1
+    )
+except KeyboardInterrupt:
+    print("Learning curve generation interrupted by user; skipping.")
+    train_sizes, train_scores, test_scores = [], [], []
+except Exception as e:
+    print(f"Error generating learning curves: {e}")
+    train_sizes, train_scores, test_scores = [], [], []
 
-plt.figure(figsize=(8, 6))
-plt.plot(train_sizes, train_scores_mean, 'o-', color="r", label="Training error")
-plt.plot(train_sizes, test_scores_mean, 'o-', color="g", label="Cross-validation error")
-plt.xlabel("Training examples")
-plt.ylabel("MSE")
-plt.title("Learning Curves")
-plt.legend(loc="best")
+if len(train_scores) > 0:
+    train_scores_mean = -np.mean(train_scores, axis=1)
+    test_scores_mean = -np.mean(test_scores, axis=1)
+
+    plt.figure(figsize=(8, 6))
+    plt.plot(train_sizes, train_scores_mean, 'o-', color="r", label="Training error")
+    plt.plot(train_sizes, test_scores_mean, 'o-', color="g", label="Cross-validation error")
+    plt.xlabel("Training examples")
+    plt.ylabel("MSE")
+    plt.title("Learning Curves")
+    plt.legend(loc="best")
 ARTIFACTS_DIR.mkdir(exist_ok=True)
 plt.savefig(ARTIFACTS_DIR / "house_learning_curve.png", bbox_inches='tight')
 graph_learning_curve = plot_to_base64()

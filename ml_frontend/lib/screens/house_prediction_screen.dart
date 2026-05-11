@@ -37,7 +37,6 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
 
   // Dropdown selections
   String? _propertyType;
-  String? _purpose;
   String _areaUnit = 'sq ft';
 
   // State
@@ -61,7 +60,6 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
 
     final house = widget.options.house;
     _propertyType = house['property_types']?.firstOrNull;
-    _purpose = house['purposes']?.firstOrNull;
     _areaUnit = 'sq ft';
   }
 
@@ -105,7 +103,7 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
         location: _locationCtrl.text.trim(),
         city: _cityCtrl.text.trim(),
         provinceName: _provinceCtrl.text.trim(),
-        purpose: _purpose!,
+        purpose: 'for sale',
       );
       final output = await _api.predictHousePrice(input);
       setState(() {
@@ -185,11 +183,6 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
                 ) ==
                 true) {
           _propertyType = extracted.propertyType;
-        }
-        if (extracted.purpose != null &&
-            widget.options.house['purposes']?.contains(extracted.purpose) ==
-                true) {
-          _purpose = extracted.purpose;
         }
         if (extracted.provinceName != null) {
           _provinceCtrl.text = extracted.provinceName!;
@@ -512,13 +505,6 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
                     _propertyType,
                     (v) => setState(() => _propertyType = v),
                   ),
-                  const SizedBox(height: 14),
-                  _dropdown(
-                    'Purpose',
-                    house['purposes'] ?? [],
-                    _purpose,
-                    (v) => setState(() => _purpose = v),
-                  ),
                 ],
               ),
             ),
@@ -618,9 +604,21 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
     return TextFormField(
       controller: controller,
       readOnly: true,
-      enabled: enabled,
       onTap: (!enabled || options.isEmpty)
-          ? null
+          ? () {
+              final msg = !enabled
+                  ? hintText
+                  : 'No options available for the selected area.';
+              if (msg != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(msg),
+                    behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
+            }
           : () => _openOptionPicker(label, options, controller, onChanged),
       decoration: InputDecoration(
         labelText: label,
