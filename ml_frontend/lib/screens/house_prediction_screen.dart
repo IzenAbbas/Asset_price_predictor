@@ -3,6 +3,8 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../constants/pakistan_locations.dart';
 import '../models/prediction_model.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
@@ -29,12 +31,12 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
   final _lngCtrl = TextEditingController(text: '73.0479');
   final _yearCtrl = TextEditingController(text: '2022');
   final _monthCtrl = TextEditingController(text: '6');
-  final _locationCtrl = TextEditingController(text: 'dha phase 6');
+  final _locationCtrl = TextEditingController();
+  final _cityCtrl = TextEditingController();
+  final _provinceCtrl = TextEditingController();
 
   // Dropdown selections
   String? _propertyType;
-  String? _city;
-  String? _province;
   String? _purpose;
   String _areaUnit = 'sq ft';
 
@@ -59,8 +61,6 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
 
     final house = widget.options.house;
     _propertyType = house['property_types']?.firstOrNull;
-    _city = house['cities']?.firstOrNull;
-    _province = house['provinces']?.firstOrNull;
     _purpose = house['purposes']?.firstOrNull;
     _areaUnit = 'sq ft';
   }
@@ -77,6 +77,8 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
     _yearCtrl.dispose();
     _monthCtrl.dispose();
     _locationCtrl.dispose();
+    _cityCtrl.dispose();
+    _provinceCtrl.dispose();
     super.dispose();
   }
 
@@ -101,8 +103,8 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
         listingMonth: int.parse(_monthCtrl.text),
         propertyType: _propertyType!,
         location: _locationCtrl.text.trim(),
-        city: _city!,
-        provinceName: _province!,
+        city: _cityCtrl.text.trim(),
+        provinceName: _provinceCtrl.text.trim(),
         purpose: _purpose!,
       );
       final output = await _api.predictHousePrice(input);
@@ -189,16 +191,11 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
                 true) {
           _purpose = extracted.purpose;
         }
-        if (extracted.city != null &&
-            widget.options.house['cities']?.contains(extracted.city) == true) {
-          _city = extracted.city;
+        if (extracted.provinceName != null) {
+          _provinceCtrl.text = extracted.provinceName!;
         }
-        if (extracted.provinceName != null &&
-            widget.options.house['provinces']?.contains(
-                  extracted.provinceName,
-                ) ==
-                true) {
-          _province = extracted.provinceName;
+        if (extracted.city != null) {
+          _cityCtrl.text = extracted.city!;
         }
         if (extracted.location != null) {
           _locationCtrl.text = extracted.location!;
@@ -414,8 +411,6 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
-                  _textField(_locationCtrl, 'Location', 'e.g. dha phase 6'),
                 ],
               ),
             ),
@@ -428,18 +423,54 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
                 children: [
                   _sectionTitle('Geography'),
                   const SizedBox(height: 16),
-                  _dropdown(
-                    'City',
-                    house['cities'] ?? [],
-                    _city,
-                    (v) => setState(() => _city = v),
+                  _textLookupField(
+                    label: 'Province',
+                    controller: _provinceCtrl,
+                    options: pakistanGeography.keys.toList(),
+                    onChanged: (p) {
+                      setState(() {
+                        _cityCtrl.clear();
+                        _locationCtrl.clear();
+                      });
+                    },
                   ),
                   const SizedBox(height: 14),
-                  _dropdown(
-                    'Province',
-                    house['provinces'] ?? [],
-                    _province,
-                    (v) => setState(() => _province = v),
+                  _textLookupField(
+                    label: 'City',
+                    controller: _cityCtrl,
+                    options:
+                        _provinceCtrl.text.isNotEmpty &&
+                            pakistanGeography.containsKey(_provinceCtrl.text)
+                        ? pakistanGeography[_provinceCtrl.text]!.keys.toList()
+                        : [],
+                    enabled: _provinceCtrl.text.isNotEmpty,
+                    hintText: _provinceCtrl.text.isEmpty
+                        ? 'Select a province first'
+                        : 'Select city',
+                    onChanged: (c) {
+                      setState(() {
+                        _locationCtrl.clear();
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  _textLookupField(
+                    label: 'Location',
+                    controller: _locationCtrl,
+                    options:
+                        _provinceCtrl.text.isNotEmpty &&
+                            _cityCtrl.text.isNotEmpty &&
+                            pakistanGeography.containsKey(_provinceCtrl.text) &&
+                            pakistanGeography[_provinceCtrl.text]!.containsKey(
+                              _cityCtrl.text,
+                            )
+                        ? pakistanGeography[_provinceCtrl.text]![_cityCtrl
+                              .text]!
+                        : [],
+                    enabled: _cityCtrl.text.isNotEmpty,
+                    hintText: _cityCtrl.text.isEmpty
+                        ? 'Select a city first'
+                        : 'Select location',
                   ),
                 ],
               ),
@@ -557,14 +588,6 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
     );
   }
 
-  Widget _textField(TextEditingController ctrl, String label, String hint) {
-    return TextFormField(
-      controller: ctrl,
-      decoration: InputDecoration(labelText: label, hintText: hint),
-      validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
-    );
-  }
-
   Widget _dropdown(
     String label,
     List<String> items,
@@ -584,10 +607,206 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
     );
   }
 
+  Widget _textLookupField({
+    required String label,
+    required TextEditingController controller,
+    required List<String> options,
+    String? hintText,
+    bool enabled = true,
+    void Function(String)? onChanged,
+  }) {
+    return TextFormField(
+      controller: controller,
+      readOnly: true,
+      enabled: enabled,
+      onTap: (!enabled || options.isEmpty)
+          ? null
+          : () => _openOptionPicker(label, options, controller, onChanged),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hintText ?? 'Select from list',
+        suffixIcon: const Icon(Icons.arrow_drop_down_rounded),
+      ),
+      validator: (v) {
+        if (v == null || v.trim().isEmpty) {
+          return 'Required';
+        }
+        return null;
+      },
+    );
+  }
+
+  Future<void> _openOptionPicker(
+    String title,
+    List<String> options,
+    TextEditingController targetCtrl,
+    void Function(String)? onChanged,
+  ) async {
+    final searchCtrl = TextEditingController();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.45),
+      builder: (context) {
+        final screenHeight = MediaQuery.of(context).size.height;
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+          child: SafeArea(
+            top: false,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Container(
+                constraints: BoxConstraints(maxHeight: screenHeight * 0.82),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.borderDark
+                        : AppColors.borderLightTheme,
+                  ),
+                ),
+                child: StatefulBuilder(
+                  builder: (context, setSheetState) {
+                    final q = searchCtrl.text.trim().toLowerCase();
+                    final filtered = q.isEmpty
+                        ? options
+                        : options
+                              .where((e) => e.toLowerCase().contains(q))
+                              .toList();
+
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? AppColors.textPrimaryDark
+                                  : AppColors.textPrimaryLight,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Select one option',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? AppColors.textSecondaryDark
+                                  : AppColors.textSecondaryLight,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          TextField(
+                            controller: searchCtrl,
+                            decoration: const InputDecoration(
+                              hintText: 'Search options',
+                              prefixIcon: Icon(Icons.search),
+                            ),
+                            onChanged: (_) => setSheetState(() {}),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            '${filtered.length} results',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? AppColors.textSecondaryDark
+                                  : AppColors.textSecondaryLight,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Expanded(
+                            child: filtered.isEmpty
+                                ? Center(
+                                    child: Text(
+                                      'No matching options',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13,
+                                        color:
+                                            Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? AppColors.textSecondaryDark
+                                            : AppColors.textSecondaryLight,
+                                      ),
+                                    ),
+                                  )
+                                : ListView.separated(
+                                    itemCount: filtered.length,
+                                    separatorBuilder: (context, index) =>
+                                        Divider(
+                                          height: 1,
+                                          color:
+                                              Theme.of(context).brightness ==
+                                                  Brightness.dark
+                                              ? AppColors.borderDark
+                                              : AppColors.borderLightTheme,
+                                        ),
+                                    itemBuilder: (context, index) {
+                                      final item = filtered[index];
+                                      return ListTile(
+                                        contentPadding: EdgeInsets.zero,
+                                        title: Text(
+                                          item,
+                                          style: TextStyle(
+                                            color:
+                                                Theme.of(context).brightness ==
+                                                    Brightness.dark
+                                                ? AppColors.textPrimaryDark
+                                                : AppColors.textPrimaryLight,
+                                          ),
+                                        ),
+                                        trailing: Icon(
+                                          Icons.chevron_right_rounded,
+                                          color:
+                                              Theme.of(context).brightness ==
+                                                  Brightness.dark
+                                              ? AppColors.textSecondaryDark
+                                              : AppColors.textSecondaryLight,
+                                        ),
+                                        onTap: () {
+                                          targetCtrl.text = item;
+                                          if (onChanged != null) {
+                                            onChanged(item);
+                                          }
+                                          Navigator.of(context).pop();
+                                        },
+                                      );
+                                    },
+                                  ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    searchCtrl.dispose();
+  }
+
   Widget _areaUnitDropdown() {
     const units = ['sq ft', 'marla', 'kanal', 'sq yd', 'sq m', 'acre'];
     return DropdownButtonFormField<String>(
-      value: units.contains(_areaUnit) ? _areaUnit : 'sq ft',
+      initialValue: units.contains(_areaUnit) ? _areaUnit : 'sq ft',
       isExpanded: true,
       dropdownColor: Theme.of(context).colorScheme.surface,
       decoration: const InputDecoration(labelText: 'Unit'),
