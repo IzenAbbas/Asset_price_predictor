@@ -447,7 +447,6 @@ def extract_categorical_by_regex(cleaned_text: str) -> dict[str, Any]:
 	elif re.search(r"\bfor rent\b", lower):
 		res["purpose"] = "for rent"
 
-	# Parse location line like "DHA Phase 6, DHA Defence, Lahore, Punjab"
 	for line in lines:
 		if "," in line and any(city in line.lower() for city in ("lahore", "karachi", "islamabad", "rawalpindi", "peshawar", "multan", "quetta")):
 			parts = [p.strip() for p in line.split(",") if p.strip()]
@@ -514,7 +513,6 @@ def normalize_output(data: dict[str, Any], cleaned_text: str) -> dict[str, Any]:
 		if baths is not None:
 			result["baths"] = baths
 
-	# Date parsing from lines like "Added May 10, 2024"
 	if result["listing_year"] is None or result["listing_month"] is None:
 		for index, line in enumerate(lines):
 			lower = line.lower()

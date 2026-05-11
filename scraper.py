@@ -1,9 +1,3 @@
-"""Webpage text scraper for car listing pages.
-
-This is the script version of the notebook scraper. It fetches a URL,
-extracts visible text with requests + BeautifulSoup, removes boilerplate,
-and saves the cleaned text to scraped_output.txt by default.
-"""
 
 from __future__ import annotations
 
@@ -15,7 +9,6 @@ from bs4 import BeautifulSoup
 
 
 def scrape_page_text(url: str, timeout: int = 10) -> str:
-    """Fetch a page and return the cleaned visible text."""
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -40,7 +33,6 @@ def scrape_page_text(url: str, timeout: int = 10) -> str:
 
 
 def save_text_to_file(text: str, path: str = "scraped_output.txt") -> None:
-    """Save the provided text to a UTF-8 encoded file."""
     output_path = Path(path)
     output_path.write_text(text, encoding="utf-8")
 

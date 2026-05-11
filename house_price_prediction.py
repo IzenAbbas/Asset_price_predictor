@@ -84,7 +84,7 @@ print(f"Rows used for training: {len(house):,}")
 def build_gradient_boosting_model() -> Pipeline:
     low_card_features = ["property_type", "city", "province_name"]
     high_card_features = ["location"]
-    
+
     preprocessor = ColumnTransformer(
         transformers=[
             (
@@ -221,9 +221,7 @@ try:
         reg = final_estimator.regressor_
         if hasattr(reg, 'coef_'):
             coefs = reg.coef_
-            # include all features in the plotted feature importance (do not exclude city/province)
             feature_names = list(all_features)
-            # assume coef_ order matches all_features
             filtered_coefs = [coefs[i] for i in range(len(feature_names))]
             plt.figure(figsize=(10, 6))
             plt.bar(range(len(filtered_coefs)), filtered_coefs)
@@ -241,7 +239,6 @@ try:
                     n_repeats=3, random_state=RANDOM_STATE, n_jobs=1
                 )
                 importances = result.importances_mean
-                # include all features in the plotted importances
                 feature_names = list(all_features)
                 filtered_importances = [importances[i] for i in range(len(feature_names))]
                 plt.figure(figsize=(10, 6))

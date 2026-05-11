@@ -4,9 +4,6 @@ import os
 
 geography = {}
 
-# We need to map column indexes:
-# 'location' = 6, 'city' = 7, 'province_name' = 8
-# Wait, let's just use csv.DictReader
 with open('../House_Details.csv', 'r', encoding='utf-8') as csvfile:
     reader = csv.DictReader(csvfile)
     for row in reader:

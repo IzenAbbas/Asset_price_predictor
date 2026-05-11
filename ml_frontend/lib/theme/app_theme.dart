@@ -1,50 +1,38 @@
-/// Application-wide design tokens, theme configuration, and reusable
-/// widget helpers for the Asset Advisor app.
 library;
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// ── Colour Palette ───────────────────────────────────────────────────
-
 class AppColors {
-  // Primary gradient (deep indigo → electric purple)
   static const Color primary = Color(0xFF4F46E5);
   static const Color primaryLight = Color(0xFF818CF8);
   static const Color primaryDark = Color(0xFF3730A3);
 
-  // Surface colours (dark mode)
   static const Color bgDark = Color(0xFF0F172A);
   static const Color bgCardDark = Color(0xFF1E293B);
   static const Color bgInputDark = Color(0xFF1E293B);
-  
-  // Surface colours (light mode)
+
   static const Color bgLight = Color(0xFFF8FAFC);
   static const Color bgCardLight = Color(0xFFFFFFFF);
   static const Color bgInputLight = Color(0xFFF1F5F9);
 
-  // Text (dark mode)
   static const Color textPrimaryDark = Color(0xFFF1F5F9);
   static const Color textSecondaryDark = Color(0xFF94A3B8);
   static const Color textMutedDark = Color(0xFF64748B);
 
-  // Text (light mode)
   static const Color textPrimaryLight = Color(0xFF0F172A);
   static const Color textSecondaryLight = Color(0xFF475569);
   static const Color textMutedLight = Color(0xFF94A3B8);
 
-  // Accents
-  static const Color accent = Color(0xFF22D3EE);   // cyan-400
-  static const Color success = Color(0xFF34D399);   // emerald-400
-  static const Color error = Color(0xFFF87171);     // red-400
-  static const Color warning = Color(0xFFFBBF24);   // amber-400
+  static const Color accent = Color(0xFF22D3EE);
+  static const Color success = Color(0xFF34D399);
+  static const Color error = Color(0xFFF87171);
+  static const Color warning = Color(0xFFFBBF24);
 
-  // Glassmorphism borders
   static const Color borderDark = Color(0xFF334155);
   static const Color borderLightTheme = Color(0xFFE2E8F0);
   static const Color borderLight = Color(0x20FFFFFF);
 }
-
-// ── Gradients ────────────────────────────────────────────────────────
 
 class AppGradients {
   static const LinearGradient primary = LinearGradient(
@@ -58,7 +46,7 @@ class AppGradients {
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
-  
+
   static const LinearGradient cardLight = LinearGradient(
     colors: [Color(0xFFFFFFFF), Color(0xFFF8FAFC)],
     begin: Alignment.topCenter,
@@ -77,8 +65,6 @@ class AppGradients {
     end: Alignment.bottomRight,
   );
 }
-
-// ── Theme Data ───────────────────────────────────────────────────────
 
 ThemeData buildDarkTheme() {
   final baseTextTheme = GoogleFonts.interTextTheme();
@@ -169,7 +155,10 @@ ThemeData buildDarkTheme() {
       }),
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return const TextStyle(color: AppColors.primaryLight, fontWeight: FontWeight.w600);
+          return const TextStyle(
+            color: AppColors.primaryLight,
+            fontWeight: FontWeight.w600,
+          );
         }
         return const TextStyle(color: AppColors.textSecondaryDark);
       }),
@@ -266,7 +255,10 @@ ThemeData buildLightTheme() {
       }),
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600);
+          return const TextStyle(
+            color: AppColors.primary,
+            fontWeight: FontWeight.w600,
+          );
         }
         return const TextStyle(color: AppColors.textSecondaryLight);
       }),
@@ -274,9 +266,6 @@ ThemeData buildLightTheme() {
   );
 }
 
-// ── Reusable Widgets ─────────────────────────────────────────────────
-
-/// Glassmorphism card wrapper
 class GlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -292,10 +281,14 @@ class GlassCard extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: isDark ? AppGradients.cardDark : AppGradients.cardLight,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? AppColors.borderLight : AppColors.borderLightTheme),
+        border: Border.all(
+          color: isDark ? AppColors.borderLight : AppColors.borderLightTheme,
+        ),
         boxShadow: [
           BoxShadow(
-            color: isDark ? Colors.black.withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.05),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.05),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -309,7 +302,6 @@ class GlassCard extends StatelessWidget {
   }
 }
 
-/// Gradient header text
 class GradientText extends StatelessWidget {
   final String text;
   final TextStyle? style;
@@ -324,15 +316,15 @@ class GradientText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return ShaderMask(
       shaderCallback: (bounds) => gradient.createShader(bounds),
       child: Text(
         text,
-        style: (style ?? const TextStyle(fontSize: 28, fontWeight: FontWeight.w800))
-            .copyWith(color: Colors.white), // The shader overrides the white color to apply the gradient
+        style:
+            (style ??
+                    const TextStyle(fontSize: 28, fontWeight: FontWeight.w800))
+                .copyWith(color: Colors.white),
       ),
     );
   }
 }
-

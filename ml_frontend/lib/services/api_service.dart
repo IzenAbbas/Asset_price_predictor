@@ -1,6 +1,3 @@
-/// HTTP service layer for communicating with the FastAPI backend.
-///
-/// All network calls are centralised here so the UI code stays clean.
 library;
 
 import 'dart:convert';
@@ -9,8 +6,6 @@ import 'package:http/http.dart' as http;
 import '../models/prediction_model.dart';
 
 class ApiService {
-  // ─── Base URL Configuration ────────────────────────────────────────
-  // Production URL for Render backend
   static const String _productionUrl =
       'https://asset-price-predictor-api.onrender.com';
 
@@ -22,7 +17,6 @@ class ApiService {
     if (kIsWeb) {
       return 'http://127.0.0.1:8000';
     }
-    // Mobile device wirelessly connected -> Use local network IP
     return 'http://192.168.100.94:8000';
   }
 
@@ -57,7 +51,6 @@ class ApiService {
     return raw;
   }
 
-  // ─── Dropdown Options ──────────────────────────────────────────────
 
   Future<DropdownOptions> getDropdownOptions() async {
     final url = Uri.parse('$baseUrl/options');
@@ -81,7 +74,6 @@ class ApiService {
     }
   }
 
-  // ─── Car Price Prediction ──────────────────────────────────────────
 
   Future<CarPredictionOutput> predictCarPrice(CarPredictionInput input) async {
     final url = Uri.parse('$baseUrl/predict/car');
@@ -112,7 +104,6 @@ class ApiService {
     }
   }
 
-  // ─── House Price Prediction ────────────────────────────────────────
 
   Future<HousePredictionOutput> predictHousePrice(
     HousePredictionInput input,
@@ -145,7 +136,6 @@ class ApiService {
     }
   }
 
-  // ─── Vehicle Field Extraction (NER from URL) ───────────────────────
 
   Future<VehicleFieldsOutput> extractVehicleFields(String url) async {
     final apiUrl = Uri.parse('$baseUrl/extract/vehicle-fields');
@@ -176,7 +166,6 @@ class ApiService {
     }
   }
 
-  // ─── House Field Extraction (NER from URL) ───────────────────────
 
   Future<HouseFieldsOutput> extractHouseFields(String url) async {
     final apiUrl = Uri.parse('$baseUrl/extract/house-fields');
@@ -207,7 +196,6 @@ class ApiService {
     }
   }
 
-  // ─── Evaluation Metrics ──────────────────────────────────────────────
 
   Future<EvaluationOutput> getEvaluationMetrics() async {
     final url = Uri.parse('$baseUrl/evaluation');

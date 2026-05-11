@@ -1,13 +1,3 @@
-"""FastAPI application — Asset Price Prediction API.
-
-Endpoints:
-  GET  /            → Status check
-  GET  /health      → Detailed health with model load status
-  GET  /options      → Dropdown options extracted from CSVs
-  POST /predict/car  → Predict car price
-  POST /predict/house→ Predict house price
-  POST /extract/vehicle-fields → Extract vehicle fields from URL using NER
-"""
 
 from __future__ import annotations
 
@@ -28,7 +18,6 @@ from schemas import (
 )
 from predictor import predictor
 
-# Try to import NER functionality (modules are co-located in ml_backend/)
 try:
     from ner_cars import extract_vehicle_fields
 except ImportError:
@@ -48,17 +37,15 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# ── CORS — allow Flutter app (web, emulator, device) to reach this API ──
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Lock this down in production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-# ── Health & Status ──────────────────────────────────────────────────
 
 @app.get("/", tags=["status"])
 def root():
@@ -72,22 +59,21 @@ def get_evaluation():
     try:
         base_dir = os.path.dirname(__file__)
         root_dir = os.path.dirname(base_dir)
-        
-        # Prioritize project root artifacts as they are updated by training scripts
+
         car_metrics_path = os.path.join(root_dir, "artifacts", "metrics.json")
         if not os.path.exists(car_metrics_path):
             car_metrics_path = os.path.join(base_dir, "artifacts", "metrics.json")
-            
+
         with open(car_metrics_path, "r") as f:
             car_metrics = json.load(f)
-            
+
         house_metrics_path = os.path.join(root_dir, "artifacts", "house_metrics.json")
         if not os.path.exists(house_metrics_path):
             house_metrics_path = os.path.join(base_dir, "artifacts", "house_metrics.json")
-            
+
         with open(house_metrics_path, "r") as f:
             house_metrics = json.load(f)
-            
+
         return EvaluationOutput(
             car_evaluation=car_metrics,
             house_evaluation=house_metrics
@@ -104,12 +90,9 @@ def health_check():
     )
 
 
-# ── Dropdown Options ─────────────────────────────────────────────────
 
 @app.get("/options", response_model=DropdownOptions, tags=["options"])
 def get_options():
-    """Return dropdown option lists so the Flutter frontend can populate
-    select boxes dynamically from the training CSV data."""
     try:
         opts = predictor.get_dropdown_options()
         return DropdownOptions(**opts)
@@ -117,7 +100,6 @@ def get_options():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ── Prediction Endpoints ─────────────────────────────────────────────
 
 @app.post("/predict/car", response_model=CarPredictionOutput, tags=["prediction"])
 def predict_car(input_data: CarPredictionInput):
@@ -137,33 +119,24 @@ def predict_house(input_data: HousePredictionInput):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ── Vehicle Field Extraction (NER from URL) ────────────────────────────
 
 class VehicleURLInput(BaseModel):
-    """Request body for vehicle field extraction from URL."""
     url: str
 
 
 class HouseURLInput(BaseModel):
-    """Request body for house field extraction from URL."""
     url: str
 
 
 @app.post("/extract/vehicle-fields", response_model=VehicleFieldsOutput, tags=["extraction"])
 def extract_vehicle_fields_endpoint(input_data: VehicleURLInput):
-    """Extract vehicle fields (NER) from a PakWheels listing URL.
-    
-    Supported domains:
-      - PakWheels: https://www.pakwheels.com/...
-    """
     if not extract_vehicle_fields:
         raise HTTPException(
             status_code=503,
             detail="NER extraction not available. Missing ner_cars module or dependencies."
         )
-    
+
     try:
-        # Validate URL domain
         lower_url = input_data.url.lower()
         if "pakwheels" not in lower_url:
             raise HTTPException(
@@ -171,11 +144,10 @@ def extract_vehicle_fields_endpoint(input_data: VehicleURLInput):
                 detail="Unsupported URL domain. Only PakWheels is supported. "
                        "Example: https://www.pakwheels.com/..."
             )
-        
-        # Extract fields using NER
+
         result = extract_vehicle_fields(input_data.url)
         return VehicleFieldsOutput(**result)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -184,11 +156,6 @@ def extract_vehicle_fields_endpoint(input_data: VehicleURLInput):
 
 @app.post("/extract/house-fields", response_model=HouseFieldsOutput, tags=["extraction"])
 def extract_house_fields_endpoint(input_data: HouseURLInput):
-    """Extract house fields (NER) from a Zameen listing URL.
-    
-    Supported domains:
-      - Zameen: https://www.zameen.com/...
-    """
     if not extract_house_fields:
         raise HTTPException(
             status_code=503,

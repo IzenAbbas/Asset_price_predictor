@@ -85,7 +85,7 @@ print(f"Rows used for training: {len(car):,}")
 def build_gradient_boosting_model() -> Pipeline:
     low_card_features = ["fuel_type", "transmission", "assembly", "brand"]
     high_card_features = ["model_name"]
-    
+
     preprocessor = ColumnTransformer(
         transformers=[
             (
@@ -228,7 +228,7 @@ try:
         else:
             print("Calculating permutation importance (this may take a moment)...")
             result = permutation_importance(
-                selected_model, X_test.iloc[:1000], y_test.iloc[:1000], 
+                selected_model, X_test.iloc[:1000], y_test.iloc[:1000],
                 n_repeats=3, random_state=RANDOM_STATE, n_jobs=-1
             )
             importances = result.importances_mean

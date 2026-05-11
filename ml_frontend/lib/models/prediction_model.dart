@@ -1,10 +1,5 @@
-/// Data models matching the FastAPI Pydantic schemas.
-///
-/// These mirror [schemas.py] on the backend so that JSON serialization
-/// is consistent between client and server.
 library;
 
-// ── Car Prediction ──────────────────────────────────────────────────
 
 class CarPredictionInput {
   final int modelYear;
@@ -56,7 +51,6 @@ class CarPredictionOutput {
   }
 }
 
-// ── Vehicle Field Extraction (NER) ──────────────────────────────────
 
 class VehicleFieldsOutput {
   final int? modelYear;
@@ -93,7 +87,6 @@ class VehicleFieldsOutput {
   }
 }
 
-// ── House Field Extraction (NER) ──────────────────────────────────
 
 class HouseFieldsOutput {
   final double? totalArea;
@@ -148,7 +141,6 @@ class HouseFieldsOutput {
   }
 }
 
-// ── House Prediction ────────────────────────────────────────────────
 
 class HousePredictionInput {
   final double totalArea;
@@ -212,7 +204,6 @@ class HousePredictionOutput {
   }
 }
 
-// ── Dropdown Options ────────────────────────────────────────────────
 
 class DropdownOptions {
   final Map<String, List<String>> car;
@@ -243,7 +234,6 @@ class DropdownOptions {
   }
 }
 
-// ── Evaluation ──────────────────────────────────────────────────────
 
 class EvaluationMetrics {
   final String selectedModel;
@@ -251,7 +241,7 @@ class EvaluationMetrics {
   final double testRmse;
   final double testR2;
   final Map<String, String> graphs;
-  
+
   EvaluationMetrics({
     required this.selectedModel,
     required this.testMae,
@@ -259,7 +249,7 @@ class EvaluationMetrics {
     required this.testR2,
     required this.graphs,
   });
-  
+
   factory EvaluationMetrics.fromJson(Map<String, dynamic> json) {
     return EvaluationMetrics(
       selectedModel: json['selected_model'] as String,
@@ -276,12 +266,12 @@ class EvaluationMetrics {
 class EvaluationOutput {
   final EvaluationMetrics carEvaluation;
   final EvaluationMetrics houseEvaluation;
-  
+
   EvaluationOutput({
     required this.carEvaluation,
     required this.houseEvaluation,
   });
-  
+
   factory EvaluationOutput.fromJson(Map<String, dynamic> json) {
     return EvaluationOutput(
       carEvaluation: EvaluationMetrics.fromJson(json['car_evaluation'] as Map<String, dynamic>),

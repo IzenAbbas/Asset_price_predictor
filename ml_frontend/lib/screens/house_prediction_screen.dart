@@ -1,5 +1,3 @@
-/// House Price Prediction screen — collects property features and shows
-/// the predicted price from the FastAPI backend.
 library;
 
 import 'package:flutter/material.dart';
@@ -22,7 +20,6 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
   final _formKey = GlobalKey<FormState>();
   final _api = ApiService();
 
-  // Numeric controllers
   final _urlCtrl = TextEditingController();
   final _areaCtrl = TextEditingController(text: '1089');
   final _bedroomsCtrl = TextEditingController(text: '3');
@@ -35,11 +32,9 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
   final _cityCtrl = TextEditingController();
   final _provinceCtrl = TextEditingController();
 
-  // Dropdown selections
   String? _propertyType;
   String _areaUnit = 'sq ft';
 
-  // State
   bool _isLoading = false;
   bool _isExtracting = false;
   HousePredictionOutput? _result;
@@ -226,7 +221,6 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Header ──
             Row(
               children: [
                 Container(
@@ -266,7 +260,6 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
             ),
             const SizedBox(height: 20),
 
-            // ── URL Extraction Card ──
             GlassCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -366,7 +359,6 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
             ),
             const SizedBox(height: 20),
 
-            // ── Property Details ──
             GlassCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -409,7 +401,6 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
             ),
             const SizedBox(height: 16),
 
-            // ── Geography ──
             GlassCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -470,7 +461,6 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
             ),
             const SizedBox(height: 16),
 
-            // ── Listing Info ──
             GlassCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -510,7 +500,6 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
             ),
             const SizedBox(height: 24),
 
-            // ── Submit ──
             _predictButton(),
             const SizedBox(height: 20),
 
@@ -524,7 +513,6 @@ class _HousePredictionScreenState extends State<HousePredictionScreen>
     );
   }
 
-  // ─── Helpers ───────────────────────────────────────────────────────
 
   Widget _sectionTitle(String title) {
     return Text(

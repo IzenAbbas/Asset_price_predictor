@@ -6,10 +6,9 @@ import joblib
 import pandas as pd
 
 try:
-    from IPython.display import display  # type: ignore
+    from IPython.display import display
 except Exception:
-    # Fallback for plain Python execution (non-notebook).
-    def display(obj):  # type: ignore
+    def display(obj):
         print(obj)
 
 
@@ -40,7 +39,6 @@ def load_room_feature_decision(metrics_path: Path) -> str:
 
 
 def test_car_price_prediction(selected_model, multicollinearity_decision: str) -> pd.DataFrame:
-    # Sample code to test Car Price Predictor
     x_sample = pd.DataFrame(
         {
             "mileage": [50000, 75000, 20000],
@@ -74,7 +72,6 @@ def test_car_price_prediction(selected_model, multicollinearity_decision: str) -
 
 
 def test_house_price_prediction(selected_model, room_feature_decision: str) -> pd.DataFrame:
-    # Sample records to verify house price prediction flow.
     x_sample = pd.DataFrame(
         {
             "Total_Area": [1089.004, 2450.0, 3560.0],

@@ -184,17 +184,6 @@ def clean_listing_text(raw_text: str, title: str = "") -> str:
 
 
 def _extract_structured_specs(raw_lines: list[str]) -> list[str]:
-	"""Scan raw lines for structured label→value pairs used on PakWheels.
-
-	PakWheels uses a pattern like:
-	    Assembly        (label line)
-	    Local           (value line)
-	    Engine Capacity (label line)
-	    1500 cc         (value line)
-
-	This function detects those pairs and also collects standalone spec lines
-	(e.g. "Petrol", "Automatic", "160,000 km").
-	"""
 	SPEC_LABELS = {
 		"registered in", "color", "assembly", "engine capacity", "body type",
 		"last updated", "fuel type", "fuel", "transmission", "mileage",
@@ -203,13 +192,13 @@ def _extract_structured_specs(raw_lines: list[str]) -> list[str]:
 	}
 	STANDALONE_SPEC_RE = re.compile(
 		r"^(?:"
-		r"\d[\d,]*\s?(?:km|kms|cc)\b"                         # 160,000 km  or  1500 cc
-		r"|\.?\s*\d{3,4}\s?cc\s*\.?"                           # . 1500 cc .
-		r"|\b(?:petrol|diesel|hybrid|electric|cng|lpg)\b"      # fuel types
-		r"|\b(?:automatic|manual)\b"                           # transmission
-		r"|\b(?:local|imported)\b"                             # assembly
-		r"|\b(?:sedan|hatchback|suv|crossover|van|truck)\b"    # body type
-		r"|\b(?:19|20)\d{2}\b"                                 # standalone year
+		r"\d[\d,]*\s?(?:km|kms|cc)\b"
+		r"|\.?\s*\d{3,4}\s?cc\s*\.?"
+		r"|\b(?:petrol|diesel|hybrid|electric|cng|lpg)\b"
+		r"|\b(?:automatic|manual)\b"
+		r"|\b(?:local|imported)\b"
+		r"|\b(?:sedan|hatchback|suv|crossover|van|truck)\b"
+		r"|\b(?:19|20)\d{2}\b"
 		r")$",
 		re.IGNORECASE,
 	)
@@ -221,11 +210,9 @@ def _extract_structured_specs(raw_lines: list[str]) -> list[str]:
 		line = raw_lines[i].strip()
 		lower = line.lower()
 
-		# Check if this line is a known spec label
 		if lower in SPEC_LABELS:
 			specs.append(line)
 			seen.add(lower)
-			# Grab the next non-empty line as the value
 			if i + 1 < len(raw_lines):
 				val = raw_lines[i + 1].strip()
 				if val and val.lower() not in SPEC_LABELS:
@@ -236,7 +223,6 @@ def _extract_structured_specs(raw_lines: list[str]) -> list[str]:
 			i += 1
 			continue
 
-		# Check if this is a standalone spec value (e.g. "Petrol", "160,000 km")
 		if STANDALONE_SPEC_RE.match(line) and lower not in seen:
 			specs.append(line)
 			seen.add(lower)
@@ -249,9 +235,6 @@ def _extract_structured_specs(raw_lines: list[str]) -> list[str]:
 def clean_pakwheels(text: str) -> str:
 	raw_lines = [ln.strip() for ln in text.splitlines()]
 
-	# --- Step 1: Extract the ad title ---
-	# PakWheels titles appear as repeated heading lines like "Honda Civic EXi Prosmatec 2004"
-	# They also appear in breadcrumbs. Look for a line with brand + year pattern.
 	title_line = ""
 	TITLE_RE = re.compile(
 		r"^(?:Used\s+)?(?:(?:Toyota|Honda|Suzuki|Kia|Hyundai|Changan|MG|BMW|Audi|"
@@ -262,45 +245,30 @@ def clean_pakwheels(text: str) -> str:
 	)
 	for line in raw_lines:
 		if TITLE_RE.match(line):
-			# Prefer the longest matching title (the actual ad title, not breadcrumb)
 			if len(line) > len(title_line):
 				title_line = line
 
-	# --- Step 2: Collect quick-stats block ---
-	# PakWheels shows a quick-stats section right after photos:
-	#   2004
-	#   160,000 km
-	#   Petrol
-	#   Automatic
-	# Find this block: look for a standalone year followed by km/fuel/transmission lines
 	quick_stats: list[str] = []
 	for i, line in enumerate(raw_lines):
 		if re.fullmatch(r"(19|20)\d{2}", line.strip()):
-			# Check if the next few lines look like specs (km, fuel, transmission)
 			window = raw_lines[i : min(len(raw_lines), i + 6)]
 			has_km = any(re.search(r"\d[\d,]*\s?km", w, flags=re.IGNORECASE) for w in window)
 			has_fuel = any(re.search(r"\b(petrol|diesel|hybrid|electric|cng|lpg)\b", w, flags=re.IGNORECASE) for w in window)
 			has_price = any(re.search(r"\bpkr\b", w, flags=re.IGNORECASE) for w in window)
-			# Require BOTH km and fuel, and NO price line (to skip the stats-bar near PKR)
 			if has_km and has_fuel and not has_price:
 				quick_stats = [w.strip() for w in window if w.strip() and not re.search(r"\bpkr\b|never buy|click photo|schedule|featured|previous|next", w, flags=re.IGNORECASE)]
 				break
 
-	# --- Step 3: Extract structured spec pairs (Assembly→Local, Engine Capacity→1500 cc) ---
 	structured_specs = _extract_structured_specs(raw_lines)
 
-	# --- Step 4: Extract seller's comments / description ---
-	# PakWheels has "Seller's Comments" appearing twice: once in the tab nav
-	# and once as the actual section header. We want the LAST occurrence.
 	seller_comments: list[str] = []
 	comment_start_idx = -1
 	for i, line in enumerate(raw_lines):
 		if line.lower().strip() in ("seller's comments", "seller comments"):
-			comment_start_idx = i  # Keep updating to get the last occurrence
+			comment_start_idx = i
 	if comment_start_idx >= 0:
 		for line in raw_lines[comment_start_idx + 1:]:
 			lower = line.lower().strip()
-			# Stop at known section boundaries
 			if lower in ("similar ads", "safety tips", "×", "reduce price", "seller details", ""):
 				break
 			if re.search(r"\b(mention pakwheels|pkr\s?\d)", lower, flags=re.IGNORECASE):
@@ -308,7 +276,6 @@ def clean_pakwheels(text: str) -> str:
 			if len(line.strip()) > 3:
 				seller_comments.append(line.strip())
 
-	# --- Step 5: Assemble the clean text ---
 	parts: list[str] = []
 	if title_line:
 		parts.append(f"Title: {title_line}")
@@ -322,7 +289,6 @@ def clean_pakwheels(text: str) -> str:
 	if parts:
 		return "\n\n".join(parts)
 
-	# Fallback: remove navigation and SEO junk
 	cleaned = re.sub(r"^(Used Cars|New Cars|Bikes|Auto Store|Videos|Forums|Blog|PakWheels.*|Auction Sheet.*|MTMIS.*|DLIMS.*).*$", "", text, flags=re.MULTILINE | re.IGNORECASE)
 	cleaned = re.sub(r"(?s)(SIMILAR ADS|Used [A-Za-z ]+ by Year|Used [A-Za-z ]+ by City|Notify Me).*$", "", cleaned, flags=re.IGNORECASE)
 	cleaned = re.sub(r"^(Send Message|Show Phone Number|Learn More|×|Previous|Next)$", "", cleaned, flags=re.MULTILINE | re.IGNORECASE)
@@ -362,15 +328,8 @@ def extract_json_block(text: str) -> dict[str, Any]:
 
 
 def extract_brand_model_from_url(url: str) -> tuple[str | None, str | None]:
-	"""Infer brand and model from common listing URL slugs.
-
-	Example:
-	- https://www.pakwheels.com/used-cars/honda-civic-2004-for-sale-in-rawalpindi-11465498
-	  -> ("honda", "civic")
-	"""
 	lower_url = (url or "").lower()
 
-	# PakWheels slug: /used-cars/<brand>-<model>-<year>-for-sale-...
 	pk = re.search(r"/used-cars/([a-z0-9-]+)-for-sale", lower_url)
 	if pk:
 		slug = pk.group(1)
@@ -381,21 +340,13 @@ def extract_brand_model_from_url(url: str) -> tuple[str | None, str | None]:
 			model_name = " ".join(model_tokens).strip() or None
 			return brand or None, model_name
 
-	# OLX style URLs can vary a lot; leave as None for now.
 	return None, None
 
 def extract_categorical_by_regex(cleaned_text: str) -> dict[str, Any]:
-	"""Deterministic regex fallbacks for categorical fields.
-
-	Attempts to extract fuel_type, transmission, assembly, brand and model_name
-	from the cleaned listing text when the NER returns null.
-	"""
 	lower = cleaned_text.lower()
 	lines = [ln.strip() for ln in cleaned_text.splitlines() if ln.strip()]
 	res: dict[str, Any] = {"fuel_type": None, "transmission": None, "assembly": None, "brand": None, "model_name": None}
 
-	# --- Fuel type ---
-	# Check Quick Stats line first (highest signal)
 	for line in lines:
 		ll = line.lower()
 		if ll.startswith("quick stats:"):
@@ -403,7 +354,6 @@ def extract_categorical_by_regex(cleaned_text: str) -> dict[str, Any]:
 			if m:
 				res["fuel_type"] = m.group(1).lower()
 				break
-	# Then check standalone or labeled fuel lines
 	if res["fuel_type"] is None:
 		for line in lines:
 			ll = line.lower()
@@ -416,14 +366,11 @@ def extract_categorical_by_regex(cleaned_text: str) -> dict[str, Any]:
 				if m:
 					res["fuel_type"] = m.group(1).lower()
 					break
-	# Last resort: anywhere
 	if res["fuel_type"] is None:
 		m_any = re.search(r"\b(petrol|diesel|hybrid|electric|cng|lpg)\b", lower, flags=re.IGNORECASE)
 		if m_any:
 			res["fuel_type"] = m_any.group(1).lower()
 
-	# --- Transmission ---
-	# Check Quick Stats line first
 	for line in lines:
 		ll = line.lower()
 		if ll.startswith("quick stats:"):
@@ -431,14 +378,12 @@ def extract_categorical_by_regex(cleaned_text: str) -> dict[str, Any]:
 			if m:
 				res["transmission"] = m.group(1).lower()
 				break
-	# Then check any line
 	if res["transmission"] is None:
 		for line in lines:
 			m = re.search(r"\b(automatic|manual)\b", line, flags=re.IGNORECASE)
 			if m:
 				res["transmission"] = m.group(1).lower()
 				break
-	# Map common variant names
 	if res["transmission"] is None:
 		variant_map = {
 			"prosmatec": "automatic",
@@ -457,8 +402,6 @@ def extract_categorical_by_regex(cleaned_text: str) -> dict[str, Any]:
 				res["transmission"] = mapped
 				break
 
-	# --- Assembly ---
-	# Prefer label→value pair
 	for i, line in enumerate(lines):
 		if line.lower().strip() == "assembly" and i + 1 < len(lines):
 			val = lines[i + 1].lower().strip()
@@ -473,7 +416,6 @@ def extract_categorical_by_regex(cleaned_text: str) -> dict[str, Any]:
 				asm = "imported"
 			res["assembly"] = asm
 
-	# --- Brand and Model ---
 	COMMON_BRANDS = [
 		"Toyota", "Honda", "Suzuki", "Kia", "Hyundai", "Changan", "MG", "BMW",
 		"Audi", "Daihatsu", "Nissan", "Mercedes", "Mitsubishi", "Lexus", "Mazda",
@@ -485,7 +427,6 @@ def extract_categorical_by_regex(cleaned_text: str) -> dict[str, Any]:
 		"Faisalabad", "Gujranwala", "Sialkot", "Sargodha", "Bahawalpur",
 		"Hyderabad", "Quetta", "Abbottabad", "Mardan",
 	]
-	# Noise tokens that should not be part of model_name
 	NOISE_MODEL_TOKENS = {
 		"cars", "car", "for", "sale", "in", "price", "pakistan", "used",
 		"prices", "specs", "features", "variants", "review",
@@ -494,10 +435,9 @@ def extract_categorical_by_regex(cleaned_text: str) -> dict[str, Any]:
 	brand_found = None
 	model_found = None
 
-	# PRIORITY 1: Parse from "Title: Brand Model Variant Year" line (our structured output)
 	for line in lines:
 		if line.lower().startswith("title:"):
-			title_text = line[6:].strip()  # Remove "Title: " prefix
+			title_text = line[6:].strip()
 			for b in COMMON_BRANDS:
 				m = re.search(
 					r"\b" + re.escape(b) + r"\b\s+(?P<model>[A-Za-z0-9][A-Za-z0-9 \-\/]*?)(?:\s+\b(?:19|20)\d{2}\b|$)",
@@ -507,15 +447,12 @@ def extract_categorical_by_regex(cleaned_text: str) -> dict[str, Any]:
 				if m:
 					brand_found = b.lower()
 					cand = m.group("model").strip()
-					# Extract just the core model name (first 1-2 words, strip variants like "EXi Prosmatec")
 					model_parts = cand.split()
 					if model_parts:
-						# The first word is almost always the model name
 						model_found = model_parts[0].lower()
 					break
 			break
 
-	# PRIORITY 2: Search all lines for brand+model patterns
 	if not brand_found:
 		for b in COMMON_BRANDS:
 			for line in lines:
@@ -529,15 +466,13 @@ def extract_categorical_by_regex(cleaned_text: str) -> dict[str, Any]:
 						cand = m.group("model").strip()
 						cand = re.sub(r"\b(automatic|manual|petrol|diesel|cc|km|lacs?)\b.*$", "", cand, flags=re.IGNORECASE).strip()
 						cand = re.sub(r"[\|,]+$", "", cand).strip()
-						# Reject city names
 						if any(re.search(r"\b" + re.escape(c) + r"\b", cand, flags=re.IGNORECASE) for c in CITY_TOKENS):
 							continue
-						# Reject noise words
 						cand_words = [w for w in cand.lower().split() if w not in NOISE_MODEL_TOKENS]
 						if not cand_words:
 							continue
 						brand_found = b.lower()
-						model_found = cand_words[0]  # Core model name
+						model_found = cand_words[0]
 						break
 			if brand_found:
 				break
@@ -618,7 +553,6 @@ def normalize_output(data: dict[str, Any], cleaned_text: str) -> dict[str, Any]:
 		if isinstance(value, str):
 			result[field] = value.lower()
 
-	# If categorical fields are still missing, use deterministic regex fallbacks
 	fallbacks = extract_categorical_by_regex(cleaned_text)
 	for field in ("fuel_type", "transmission", "assembly", "brand", "model_name"):
 		if result.get(field) is None and fallbacks.get(field):
@@ -693,7 +627,6 @@ Now extract from this listing:
 
 
 def extract_vehicle_fields(url: str) -> dict[str, Any]:
-	# Use the standalone scraper to fetch cleaned visible text
 	raw_text = scraper_scrape_page_text(url)
 
 	lower = url.lower()
@@ -702,7 +635,6 @@ def extract_vehicle_fields(url: str) -> dict[str, Any]:
 
 	cleaned_text = clean_pakwheels(raw_text)
 
-	# If the platform-specific cleaner didn't find much, fall back to heuristics
 	if not cleaned_text.strip():
 		cleaned_text = clean_listing_text(raw_text)
 
@@ -711,7 +643,6 @@ def extract_vehicle_fields(url: str) -> dict[str, Any]:
 	except Exception:
 		result = normalize_output({}, cleaned_text)
 
-	# Fallback: when NER misses brand/model, infer from URL slug.
 	if result.get("brand") is None or result.get("model_name") is None:
 		url_brand, url_model = extract_brand_model_from_url(url)
 		if result.get("brand") is None and url_brand:

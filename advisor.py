@@ -4,7 +4,6 @@ from livekit.plugins import google
 
 from advisor_tools import CSV_TOOLS
 
-# Load your environment variables from .env
 load_dotenv()
 
 SYSTEM_PROMPT = """
@@ -45,10 +44,8 @@ server = AgentServer()
 
 @server.rtc_session(agent_name="gemini-native-audio")
 async def entrypoint(ctx: JobContext):
-    # 1. Connect to the LiveKit room
     await ctx.connect()
 
-    # 2. Initialize the Session with the correct AI Studio model
     session = AgentSession(
         llm=google.realtime.RealtimeModel(
             model="gemini-2.5-flash-native-audio-preview-12-2025",
@@ -56,7 +53,6 @@ async def entrypoint(ctx: JobContext):
         )
     )
 
-    # 3. Start the session and attach your Assistant class
     await session.start(
         room=ctx.room,
         agent=Assistant()

@@ -18,7 +18,6 @@ from dotenv import load_dotenv
 
 
 BASE_DIR = Path(__file__).resolve().parent
-# Load .env from project root so API keys are available to os.getenv calls.
 load_dotenv(BASE_DIR / ".env")
 ARTIFACTS_DIR = BASE_DIR / "artifacts"
 CAR_MODEL_PATH = ARTIFACTS_DIR / "car_price_best_model.pkl"
@@ -102,7 +101,7 @@ def load_advisor_tools() -> tuple[Any, Any, str | None]:
         from advisor_tools import search_car_listings, search_house_listings
 
         return search_car_listings, search_house_listings, None
-    except Exception as exc:  # pragma: no cover - environment dependent
+    except Exception as exc:
         return None, None, str(exc)
 
 
@@ -235,7 +234,7 @@ def transcribe_audio_with_openai(audio_bytes: bytes) -> tuple[str | None, str | 
         return None, "Set OPENAI_API_KEY to enable voice-to-text transcription."
 
     try:
-        from openai import OpenAI  # type: ignore
+        from openai import OpenAI
     except Exception:
         return None, "Install the OpenAI SDK to enable voice-to-text: pip install openai"
 
@@ -249,7 +248,7 @@ def transcribe_audio_with_openai(audio_bytes: bytes) -> tuple[str | None, str | 
         if not cleaned:
             return None, "No speech detected. Please try speaking again."
         return cleaned, None
-    except Exception as exc:  # pragma: no cover - network/service dependent
+    except Exception as exc:
         return None, f"Transcription failed: {exc}"
 
 
@@ -288,7 +287,7 @@ def main() -> None:
             width: 56px;
             height: 56px;
             border-radius: 50%;
-            background: #2f80ed;
+            background:
             color: white !important;
             font-size: 28px;
             line-height: 56px;
@@ -298,7 +297,7 @@ def main() -> None:
             z-index: 9999;
         }
         .fab-link:hover {
-            background: #1f6ad0;
+            background:
         }
         </style>
         <a class="fab-link" href="#ai-assistant" title="AI Assistant">💬</a>

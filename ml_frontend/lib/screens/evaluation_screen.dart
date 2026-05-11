@@ -207,7 +207,9 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                   return Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
-                    color: Theme.of(context).colorScheme.surfaceVariant,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
                     child: Text(
                       'Could not render $title graph.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(

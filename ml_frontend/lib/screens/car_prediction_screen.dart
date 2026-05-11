@@ -1,5 +1,3 @@
-/// Car Price Prediction screen — collects car features and shows the
-/// predicted price from the FastAPI backend.
 library;
 
 import 'package:flutter/material.dart';
@@ -21,7 +19,6 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
   final _formKey = GlobalKey<FormState>();
   final _api = ApiService();
 
-  // Controllers
   final _urlCtrl = TextEditingController();
   final _modelYearCtrl = TextEditingController(text: '2020');
   final _mileageCtrl = TextEditingController(text: '50000');
@@ -29,12 +26,10 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
   final _brandCtrl = TextEditingController();
   final _modelNameCtrl = TextEditingController();
 
-  // Dropdown selections
   String? _fuelType;
   String? _transmission;
   String? _assembly;
 
-  // State
   bool _isLoading = false;
   bool _isExtracting = false;
   CarPredictionOutput? _result;
@@ -53,7 +48,6 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
     );
     _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
 
-    // Set default dropdown values
     final car = widget.options.car;
     _fuelType = car['fuel_types']?.firstOrNull;
     _transmission = car['transmissions']?.firstOrNull;
@@ -120,7 +114,6 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
         _isExtracting = false;
         _extractionError = null;
 
-        // Auto-fill the form fields
         if (extracted.modelYear != null) {
           _modelYearCtrl.text = extracted.modelYear.toString();
         }
@@ -222,7 +215,6 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Header ──
             Row(
               children: [
                 Container(
@@ -262,7 +254,6 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
             ),
             const SizedBox(height: 20),
 
-            // ── URL Extraction Card ──
             GlassCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -362,7 +353,6 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
             ),
             const SizedBox(height: 20),
 
-            // ── Numeric Fields ──
             GlassCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,7 +378,6 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
             ),
             const SizedBox(height: 16),
 
-            // ── Dropdown Fields ──
             GlassCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -465,11 +454,9 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
             ),
             const SizedBox(height: 24),
 
-            // ── Submit Button ──
             _predictButton(),
             const SizedBox(height: 20),
 
-            // ── Result / Error ──
             if (_result != null) _resultCard(),
             if (_error != null) _errorCard(),
 
@@ -480,7 +467,6 @@ class _CarPredictionScreenState extends State<CarPredictionScreen>
     );
   }
 
-  // ─── Helpers ───────────────────────────────────────────────────────
 
   Widget _sectionTitle(String title) {
     return Text(

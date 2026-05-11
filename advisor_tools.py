@@ -24,7 +24,7 @@ def _clamp_limit(limit: int | None, default: int = 5, maximum: int = 10) -> int:
 def _load_csv(path: Path) -> pd.DataFrame:
     if not path.exists():
         raise FileNotFoundError(f"CSV file not found: {path}")
-    return cast(pd.DataFrame, pd.read_csv(path))  # type: ignore[call-overload]
+    return cast(pd.DataFrame, pd.read_csv(path))
 
 
 @lru_cache(maxsize=1)

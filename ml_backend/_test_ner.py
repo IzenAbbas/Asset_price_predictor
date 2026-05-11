@@ -1,10 +1,8 @@
-"""Test NER extraction endpoints."""
 import requests
 import json
 
 BASE = "http://127.0.0.1:8001"
 
-# Test vehicle NER extraction
 print("Testing vehicle extraction...")
 try:
     r = requests.post(
@@ -21,7 +19,6 @@ try:
 except Exception as e:
     print(f"  [ERROR] {e}")
 
-# Test house NER extraction
 print("\nTesting house extraction...")
 try:
     r = requests.post(

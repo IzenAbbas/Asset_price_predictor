@@ -1,7 +1,3 @@
-/// Entry point for the Asset Advisor Flutter app.
-///
-/// Fetches dropdown options from the FastAPI backend on startup, then
-/// shows a bottom-navigation shell with Car and House prediction tabs.
 library;
 
 import 'package:flutter/material.dart';
@@ -39,8 +35,6 @@ class AssetAdvisorApp extends StatelessWidget {
   }
 }
 
-/// Top-level shell that loads dropdown options once, then renders
-/// car/house tabs with a smooth bottom navigation bar.
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -88,7 +82,6 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // ── App Bar ──
       appBar: AppBar(
         centerTitle: false,
         title: Row(
@@ -143,10 +136,8 @@ class _AppShellState extends State<AppShell> {
         ],
       ),
 
-      // ── Body ──
       body: _buildBody(),
 
-      // ── Bottom Navigation ──
       bottomNavigationBar: _options != null
           ? Builder(
               builder: (context) {
@@ -235,7 +226,6 @@ class _AppShellState extends State<AppShell> {
   }
 
   Widget _buildBody() {
-    // Loading state
     if (_loading) {
       return Center(
         child: Column(
@@ -257,7 +247,6 @@ class _AppShellState extends State<AppShell> {
       );
     }
 
-    // Error state
     if (_error != null) {
       return Center(
         child: Padding(
@@ -307,7 +296,6 @@ class _AppShellState extends State<AppShell> {
       );
     }
 
-    // Tabbed content
     return IndexedStack(
       index: _currentTab,
       children: [
