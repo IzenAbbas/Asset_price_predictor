@@ -90,7 +90,9 @@ class _AppShellState extends State<AppShell> {
     return Scaffold(
       // ── App Bar ──
       appBar: AppBar(
+        centerTitle: false,
         title: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
@@ -202,7 +204,9 @@ class _AppShellState extends State<AppShell> {
                         ),
                         selectedIcon: Icon(
                           Icons.home_rounded,
-                          color: AppColors.accent,
+                          color: isDark
+                              ? AppColors.primaryLight
+                              : AppColors.primary,
                         ),
                         label: 'House',
                       ),

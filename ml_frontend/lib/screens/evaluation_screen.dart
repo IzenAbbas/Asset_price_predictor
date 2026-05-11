@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../models/prediction_model.dart';
 import '../services/api_service.dart';
@@ -71,6 +72,40 @@ class _EvaluationScreenState extends State<EvaluationScreen>
               _buildStatRow('RMSE', metrics.testRmse.toStringAsFixed(2)),
               const SizedBox(height: 16),
               _buildStatRow('R²', metrics.testR2.toStringAsFixed(4)),
+              const SizedBox(height: 24),
+              const Text(
+                'Graphs',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const Divider(),
+              if (metrics.graphs.containsKey('predicted_vs_actual') &&
+                  metrics.graphs['predicted_vs_actual']!.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Text('Predicted vs. Actual', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Image.memory(base64Decode(metrics.graphs['predicted_vs_actual']!)),
+              ],
+              if (metrics.graphs.containsKey('residual_plot') &&
+                  metrics.graphs['residual_plot']!.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Text('Residual Plot', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Image.memory(base64Decode(metrics.graphs['residual_plot']!)),
+              ],
+              if (metrics.graphs.containsKey('learning_curve') &&
+                  metrics.graphs['learning_curve']!.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Text('Learning Curve', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Image.memory(base64Decode(metrics.graphs['learning_curve']!)),
+              ],
+              if (metrics.graphs.containsKey('feature_importance') &&
+                  metrics.graphs['feature_importance']!.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Text('Feature Importance', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Image.memory(base64Decode(metrics.graphs['feature_importance']!)),
+              ],
             ],
           ),
         ),

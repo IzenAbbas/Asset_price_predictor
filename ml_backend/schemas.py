@@ -118,6 +118,7 @@ class EvaluationMetrics(BaseModel):
     test_r2: float
     features: dict
     artifacts: dict
+    graphs: dict = Field(default_factory=dict)
 
 class EvaluationOutput(BaseModel):
     car_evaluation: EvaluationMetrics

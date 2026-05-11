@@ -71,11 +71,20 @@ import os
 def get_evaluation():
     try:
         base_dir = os.path.dirname(__file__)
-        car_metrics_path = os.path.join(base_dir, "artifacts", "metrics.json")
+        root_dir = os.path.dirname(base_dir)
+        
+        # Prioritize project root artifacts as they are updated by training scripts
+        car_metrics_path = os.path.join(root_dir, "artifacts", "metrics.json")
+        if not os.path.exists(car_metrics_path):
+            car_metrics_path = os.path.join(base_dir, "artifacts", "metrics.json")
+            
         with open(car_metrics_path, "r") as f:
             car_metrics = json.load(f)
             
-        house_metrics_path = os.path.join(base_dir, "artifacts", "house_metrics.json")
+        house_metrics_path = os.path.join(root_dir, "artifacts", "house_metrics.json")
+        if not os.path.exists(house_metrics_path):
+            house_metrics_path = os.path.join(base_dir, "artifacts", "house_metrics.json")
+            
         with open(house_metrics_path, "r") as f:
             house_metrics = json.load(f)
             

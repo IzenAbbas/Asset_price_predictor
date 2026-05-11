@@ -22,9 +22,8 @@ class ApiService {
     if (kIsWeb) {
       return 'http://127.0.0.1:8000';
     }
-    // Android emulator → http://10.0.2.2:8000
-    // iOS simulator    → http://127.0.0.1:8000
-    return 'http://127.0.0.1:8000';
+    // Mobile device wirelessly connected -> Use local network IP
+    return 'http://192.168.100.94:8000';
   }
 
   static String userMessageFromError(Object error, {required String fallback}) {

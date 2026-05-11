@@ -250,12 +250,14 @@ class EvaluationMetrics {
   final double testMae;
   final double testRmse;
   final double testR2;
+  final Map<String, String> graphs;
   
   EvaluationMetrics({
     required this.selectedModel,
     required this.testMae,
     required this.testRmse,
     required this.testR2,
+    required this.graphs,
   });
   
   factory EvaluationMetrics.fromJson(Map<String, dynamic> json) {
@@ -264,6 +266,9 @@ class EvaluationMetrics {
       testMae: (json['test_mae'] as num).toDouble(),
       testRmse: (json['test_rmse'] as num).toDouble(),
       testR2: (json['test_r2'] as num).toDouble(),
+      graphs: json.containsKey('graphs')
+          ? (json['graphs'] as Map<String, dynamic>).map((key, value) => MapEntry(key, value as String))
+          : {},
     );
   }
 }
