@@ -53,12 +53,8 @@ class _EvaluationScreenState extends State<EvaluationScreen>
     String title, {
     required bool isHouse,
   }) {
-    final metricInsights = isHouse
-        ? _houseMetricInsights
-        : _carMetricInsights;
-    final graphInsights = isHouse
-        ? _houseGraphInsights
-        : _carGraphInsights;
+    final metricInsights = isHouse ? _houseMetricInsights : _carMetricInsights;
+    final graphInsights = isHouse ? _houseGraphInsights : _carGraphInsights;
 
     final screenWidth = MediaQuery.of(context).size.width;
     final isWideWeb = kIsWeb && screenWidth >= 900;
@@ -81,8 +77,8 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                   Text(
                     title,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const Divider(height: 32),
                   _buildStatRow('Model', metrics.selectedModel),
@@ -112,9 +108,9 @@ class _EvaluationScreenState extends State<EvaluationScreen>
             const SizedBox(height: 24),
             Text(
               'Graphs',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             ...metrics.graphs.entries.map(
@@ -123,7 +119,8 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                 child: _buildGraphCard(
                   title: _formatGraphTitle(entry.key),
                   base64Image: entry.value,
-                  insight: graphInsights[entry.key] ??
+                  insight:
+                      graphInsights[entry.key] ??
                       'No insight is available for this graph yet.',
                   isWideWeb: isWideWeb,
                 ),
@@ -148,30 +145,30 @@ class _EvaluationScreenState extends State<EvaluationScreen>
         shape: const RoundedRectangleBorder(side: BorderSide.none),
         collapsedShape: const RoundedRectangleBorder(side: BorderSide.none),
         title: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
-        ],
-      ),
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            Text(
+              value,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
         children: [
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
               insight,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
           ),
         ],
@@ -195,9 +192,9 @@ class _EvaluationScreenState extends State<EvaluationScreen>
           collapsedShape: const RoundedRectangleBorder(side: BorderSide.none),
           title: Text(
             title,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
           ),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 12),
@@ -214,8 +211,8 @@ class _EvaluationScreenState extends State<EvaluationScreen>
                     child: Text(
                       'Could not render $title graph.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   );
                 },
@@ -229,8 +226,8 @@ class _EvaluationScreenState extends State<EvaluationScreen>
               child: Text(
                 insight,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
             ),
           ],
@@ -266,59 +263,59 @@ class _EvaluationScreenState extends State<EvaluationScreen>
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         Text(
           value,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );
   }
 
-        static const Map<String, String> _houseMetricInsights = {
-        'mae':
-          'On average, the model\'s guess for a house price is off by about 4.6 million.',
-        'rmse':
-          'A few extreme mistakes in guessing push the overall error penalty up to roughly 15.3 million.',
-        'r2':
-          'The model successfully understands about 81% of the reasons why house prices change.',
-        };
+  static const Map<String, String> _houseMetricInsights = {
+    'mae':
+        'On average, the model\'s guess for a house price is off by about 4.6 million.',
+    'rmse':
+        'A few extreme mistakes in guessing push the overall error penalty up to roughly 15.3 million.',
+    'r2':
+        'The model successfully understands about 81% of the reasons why house prices change.',
+  };
 
-        static const Map<String, String> _houseGraphInsights = {
-        'predicted_vs_actual':
-          'The model is fairly accurate for average-priced houses but struggles to guess the right price for very expensive ones.',
-        'residual_plot':
-          'The more expensive the house actually is, the less accurate the model\'s guess tends to be.',
-        'feature_importance':
-          'The total size of the house and its specific location are the biggest clues the model uses to guess the price.',
-        'learning_curve':
-          'Providing the model with more examples is steadily helping it learn and make fewer mistakes on new data.',
-        };
+  static const Map<String, String> _houseGraphInsights = {
+    'predicted_vs_actual':
+        'The model is fairly accurate for average-priced houses but struggles to guess the right price for very expensive ones.',
+    'residual_plot':
+        'The more expensive the house actually is, the less accurate the model\'s guess tends to be.',
+    'feature_importance':
+        'The total size of the house and its specific location are the biggest clues the model uses to guess the price.',
+    'learning_curve':
+        'Providing the model with more examples is steadily helping it learn and make fewer mistakes on new data.',
+  };
 
-        static const Map<String, String> _carMetricInsights = {
-        'mae':
-          'On average, the model\'s guess for a car price is off by about 441,000.',
-        'rmse':
-          'A handful of bad guesses raises the overall error penalty to around 1.46 million.',
-        'r2':
-          'The model is highly reliable, understanding almost 94% of what determines a car\'s value.',
-        };
+  static const Map<String, String> _carMetricInsights = {
+    'mae':
+        'On average, the model\'s guess for a car price is off by about 441,000.',
+    'rmse':
+        'A handful of bad guesses raises the overall error penalty to around 1.46 million.',
+    'r2':
+        'The model is highly reliable, understanding almost 94% of what determines a car\'s value.',
+  };
 
-        static const Map<String, String> _carGraphInsights = {
-        'predicted_vs_actual':
-          'The model\'s price guesses line up very closely with the real car prices in almost all cases.',
-        'residual_plot':
-          'Most of the model\'s guesses are spot-on, with mistakes clustered very tightly around zero.',
-        'feature_importance':
-          'The age of the vehicle is by far the most critical factor the model uses to figure out its price.',
-        'learning_curve':
-          'The model is learning highly effectively, and its predictions get noticeably better as it studies more car examples.',
-        };
+  static const Map<String, String> _carGraphInsights = {
+    'predicted_vs_actual':
+        'The model\'s price guesses line up very closely with the real car prices in almost all cases.',
+    'residual_plot':
+        'Most of the model\'s guesses are spot-on, with mistakes clustered very tightly around zero.',
+    'feature_importance':
+        'The age of the vehicle is by far the most critical factor the model uses to figure out its price.',
+    'learning_curve':
+        'The model is learning highly effectively, and its predictions get noticeably better as it studies more car examples.',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -338,9 +335,9 @@ class _EvaluationScreenState extends State<EvaluationScreen>
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Material(
             elevation: 6,
-            shadowColor: Theme.of(context).colorScheme.shadow.withValues(
-                  alpha: 0.2,
-                ),
+            shadowColor: Theme.of(
+              context,
+            ).colorScheme.shadow.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(16),
             color: Theme.of(context).colorScheme.surface,
             child: ClipRRect(
@@ -348,8 +345,9 @@ class _EvaluationScreenState extends State<EvaluationScreen>
               child: TabBar(
                 controller: _tabController,
                 labelColor: Theme.of(context).colorScheme.primary,
-                unselectedLabelColor:
-                    Theme.of(context).colorScheme.onSurfaceVariant,
+                unselectedLabelColor: Theme.of(
+                  context,
+                ).colorScheme.onSurfaceVariant,
                 indicatorSize: TabBarIndicatorSize.tab,
                 tabs: const [
                   Tab(icon: Icon(Icons.directions_car), text: 'Car Predictor'),
