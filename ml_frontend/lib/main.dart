@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'models/prediction_model.dart';
 import 'screens/car_prediction_screen.dart';
 import 'screens/house_prediction_screen.dart';
+import 'screens/evaluation_screen.dart';
 import 'services/api_service.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_provider.dart';
@@ -205,6 +206,21 @@ class _AppShellState extends State<AppShell> {
                         ),
                         label: 'House',
                       ),
+                      NavigationDestination(
+                        icon: Icon(
+                          Icons.bar_chart_outlined,
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondaryLight,
+                        ),
+                        selectedIcon: Icon(
+                          Icons.bar_chart_rounded,
+                          color: isDark
+                              ? AppColors.primaryLight
+                              : AppColors.primary,
+                        ),
+                        label: 'Evaluation',
+                      ),
                     ],
                   ),
                 );
@@ -293,6 +309,7 @@ class _AppShellState extends State<AppShell> {
       children: [
         CarPredictionScreen(options: _options!),
         HousePredictionScreen(options: _options!),
+        const EvaluationScreen(),
       ],
     );
   }

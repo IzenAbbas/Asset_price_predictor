@@ -242,3 +242,45 @@ class DropdownOptions {
     );
   }
 }
+
+// ── Evaluation ──────────────────────────────────────────────────────
+
+class EvaluationMetrics {
+  final String selectedModel;
+  final double testMae;
+  final double testRmse;
+  final double testR2;
+  
+  EvaluationMetrics({
+    required this.selectedModel,
+    required this.testMae,
+    required this.testRmse,
+    required this.testR2,
+  });
+  
+  factory EvaluationMetrics.fromJson(Map<String, dynamic> json) {
+    return EvaluationMetrics(
+      selectedModel: json['selected_model'] as String,
+      testMae: (json['test_mae'] as num).toDouble(),
+      testRmse: (json['test_rmse'] as num).toDouble(),
+      testR2: (json['test_r2'] as num).toDouble(),
+    );
+  }
+}
+
+class EvaluationOutput {
+  final EvaluationMetrics carEvaluation;
+  final EvaluationMetrics houseEvaluation;
+  
+  EvaluationOutput({
+    required this.carEvaluation,
+    required this.houseEvaluation,
+  });
+  
+  factory EvaluationOutput.fromJson(Map<String, dynamic> json) {
+    return EvaluationOutput(
+      carEvaluation: EvaluationMetrics.fromJson(json['car_evaluation'] as Map<String, dynamic>),
+      houseEvaluation: EvaluationMetrics.fromJson(json['house_evaluation'] as Map<String, dynamic>),
+    );
+  }
+}

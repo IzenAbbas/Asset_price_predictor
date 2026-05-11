@@ -207,4 +207,28 @@ class ApiService {
       );
     }
   }
+
+  // ─── Evaluation Metrics ──────────────────────────────────────────────
+
+  Future<EvaluationOutput> getEvaluationMetrics() async {
+    final url = Uri.parse('$baseUrl/evaluation');
+    try {
+      final response = await http.get(url).timeout(const Duration(seconds: 10));
+      if (response.statusCode == 200) {
+        return EvaluationOutput.fromJson(jsonDecode(response.body));
+      } else {
+        throw Exception(
+          'We could not load the evaluation data. Please try again in a moment.',
+        );
+      }
+    } catch (e) {
+      throw Exception(
+        userMessageFromError(
+          e,
+          fallback:
+              'We could not load the evaluation data. Please check your connection and try again.',
+        ),
+      );
+    }
+  }
 }

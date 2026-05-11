@@ -108,3 +108,18 @@ class HealthResponse(BaseModel):
     status: str
     car_model_loaded: bool
     house_model_loaded: bool
+
+# ── Evaluation ──────────────────────────────────────────────────
+
+class EvaluationMetrics(BaseModel):
+    selected_model: str
+    test_mae: float
+    test_rmse: float
+    test_r2: float
+    features: dict
+    artifacts: dict
+
+class EvaluationOutput(BaseModel):
+    car_evaluation: EvaluationMetrics
+    house_evaluation: EvaluationMetrics
+

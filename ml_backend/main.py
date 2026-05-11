@@ -24,6 +24,7 @@ from schemas import (
     HousePredictionOutput,
     HouseFieldsOutput,
     VehicleFieldsOutput,
+    EvaluationOutput,
 )
 from predictor import predictor
 
@@ -63,6 +64,27 @@ app.add_middleware(
 def root():
     return {"status": "Asset Price Prediction API is running ✅"}
 
+import json
+import os
+
+@app.get("/evaluation", response_model=EvaluationOutput, tags=["evaluation"])
+def get_evaluation():
+    try:
+        base_dir = os.path.dirname(__file__)
+        car_metrics_path = os.path.join(base_dir, "artifacts", "metrics.json")
+        with open(car_metrics_path, "r") as f:
+            car_metrics = json.load(f)
+            
+        house_metrics_path = os.path.join(base_dir, "artifacts", "house_metrics.json")
+        with open(house_metrics_path, "r") as f:
+            house_metrics = json.load(f)
+            
+        return EvaluationOutput(
+            car_evaluation=car_metrics,
+            house_evaluation=house_metrics
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health", response_model=HealthResponse, tags=["status"])
 def health_check():
