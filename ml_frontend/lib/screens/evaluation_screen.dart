@@ -106,11 +106,15 @@ class _EvaluationScreenState extends State<EvaluationScreen>
           ),
           if (metrics.graphs.isNotEmpty) ...[
             const SizedBox(height: 24),
-            Text(
-              'Graphs',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                'Graphs',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 30,
+                ),
+              ),
             ),
             const SizedBox(height: 16),
             ...metrics.graphs.entries.map(
